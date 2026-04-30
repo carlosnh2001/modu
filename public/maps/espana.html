@@ -1,0 +1,812 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mapa Interactivo · España</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<!--
+  ─────────────────────────────────────────────────────────────────
+  MAPA INTERACTIVO DE ESPAÑA
+  ─────────────────────────────────────────────────────────────────
+  Cómo personalizar:
+
+  1. CIUDADES Y ACCIONES → ver const CITIES más abajo.
+     · coords [x, y] están en el sistema del SVG (viewBox 1000×600),
+       calculadas a partir de lat/lon reales. Si quieres añadir o
+       mover ciudades, ajusta esos números o usa el helper
+       latLonToXY(lat, lon) que también está incluido.
+     · action: "tooltip" | "modal" | "url"
+     · href:   destino cuando action === "url"
+     · title / description: contenido del tooltip o modal.
+
+  2. COLORES → bloque :root al inicio del <style>.
+     Cambia --bg, --land, --stroke, --accent, --text para reskinning.
+
+  3. TIPO DE INTERACCIÓN GLOBAL → el panel "Tweaks" del editor te
+     deja cambiar entre tooltip / modal / URL en caliente, pero el
+     valor por ciudad en CITIES tiene prioridad cuando lo defines.
+  ─────────────────────────────────────────────────────────────────
+-->
+
+<style>
+  :root{
+    /* ——— Paleta (editable) ——— */
+    --bg:        #f5f3ee;          /* fondo de la página         */
+    --surface:   #ffffff;          /* tarjetas / modal           */
+    --land:      #e8e4dc;          /* relleno de España          */
+    --land-2:    #ddd7cb;          /* islas / acento sutil       */
+    --stroke:    #1a1a1a;          /* contorno del mapa          */
+    --grid:      #e6e1d6;          /* líneas guía                */
+    --text:      #15140f;          /* texto principal            */
+    --muted:     #6b6657;          /* texto secundario           */
+    --accent:    #8faf9a;          /* color de los pines         */
+    --accent-2:  #ffffff;          /* punto interior del pin     */
+    --ring:      rgba(143,175,154,.20);
+
+    /* ——— Tipografía ——— */
+    --font-sans: "Inter",system-ui,-apple-system,"Helvetica Neue",sans-serif;
+    --font-serif:"Inter",system-ui,-apple-system,sans-serif;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--font-sans);-webkit-font-smoothing:antialiased;height:100%;overflow:hidden}
+  body{display:flex;flex-direction:column}
+
+  /* —————————— LAYOUT —————————— */
+  .page{
+    max-width:1480px;
+    width:100%;
+    margin:0 auto;
+    padding:24px 32px 16px;
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    min-height:0;
+    overflow:hidden;
+  }
+  .map-wrap{flex:1;min-height:0;display:flex;flex-direction:column}
+  .map-wrap svg.map{flex:1;min-height:0}
+  header.top{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:32px;
+    flex-wrap:wrap;
+  }
+  .eyebrow{
+    font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--muted);font-weight:500;
+    display:flex;align-items:center;gap:10px;
+  }
+  .eyebrow::before{
+    content:"";width:18px;height:1px;background:var(--muted);display:inline-block;
+  }
+  h1{
+    font-family:var(--font-sans);
+    font-weight:600;
+    font-size:clamp(32px,4.6vw,56px);
+    line-height:1.02;
+    letter-spacing:-.02em;
+    margin:8px 0 0;
+    max-width:18ch;
+  }
+  h1 em{font-style:italic;color:var(--accent)}
+  .lede{
+    color:var(--muted);
+    font-size:15px;
+    line-height:1.55;
+    max-width:42ch;
+    margin:0;
+  }
+
+  /* —————————— LEYENDA / CIUDADES —————————— */
+  .legend{
+    display:flex;flex-direction:column;gap:6px;
+    background:transparent;
+    min-width:240px;
+  }
+  .legend-title{
+    font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:8px;
+  }
+  .legend ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:2px 18px}
+  .legend li{
+    display:flex;align-items:center;gap:10px;
+    font-size:14px;color:var(--text);
+    padding:6px 0;cursor:pointer;
+    border-bottom:1px solid transparent;
+    transition:color .15s ease, border-color .15s ease;
+  }
+  .legend li:hover{color:var(--accent)}
+  .legend li[data-active="true"]{color:var(--accent)}
+  .legend .dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 0 3px var(--ring);
+    flex:none;
+  }
+  .legend .num{
+    font-feature-settings:"tnum" 1;
+    color:var(--muted);font-size:11px;
+    margin-left:auto;letter-spacing:.06em;
+  }
+
+  /* —————————— MAPA —————————— */
+  .map-wrap{
+    position:relative;
+    background:transparent;
+    border:none;
+    border-radius:0;
+    padding:0;
+    box-shadow:none;
+  }
+  .map-meta{
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);
+    margin-bottom:14px;
+  }
+  .map-meta .coord{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;text-transform:none}
+  .map-meta .scale{display:flex;align-items:center;gap:8px}
+  .map-meta .scale .bar{width:46px;height:6px;border-bottom:1px solid var(--text);border-left:1px solid var(--text);border-right:1px solid var(--text)}
+
+  svg.map{
+    display:block;width:100%;height:auto;
+    overflow:visible;
+    user-select:none;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  /* contorno tipo sketch — una sola línea continua, sin relleno */
+  .country{fill:none;stroke:var(--stroke);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
+  .island{fill:none;stroke:var(--stroke);stroke-width:1.4;stroke-linejoin:round;stroke-linecap:round}
+  .dot-island{fill:var(--stroke)}
+
+  /* pines */
+  .pin{cursor:pointer;outline:none}
+  .pin .halo{fill:var(--accent);opacity:0;transform-origin:center;transform-box:fill-box}
+  .pin .ring{fill:none;stroke:var(--accent);stroke-width:1.5;opacity:.0;transform-origin:center;transform-box:fill-box}
+  .pin .core{fill:var(--accent);transition:r .25s cubic-bezier(.2,.8,.2,1)}
+  .pin .inner{fill:var(--accent-2)}
+  .pin .label{
+    font-size:14px;font-weight:500;fill:var(--text);
+    paint-order:stroke;stroke:var(--bg);stroke-width:4;stroke-linejoin:round;
+    pointer-events:none;
+    transition:fill .2s ease;
+  }
+  .pin .sublabel{
+    font-size:10px;letter-spacing:.14em;text-transform:uppercase;fill:var(--muted);
+    paint-order:stroke;stroke:var(--bg);stroke-width:3;
+    pointer-events:none;
+  }
+  .pin:hover .core,
+  .pin:focus-visible .core{r:7}
+  .pin:hover .label,
+  .pin:focus-visible .label{fill:var(--accent)}
+  .pin:hover .halo,
+  .pin:focus-visible .halo{
+    opacity:.18;
+    animation:halo 1.6s ease-out infinite;
+  }
+  .pin:hover .ring,
+  .pin:focus-visible .ring{
+    opacity:.5;
+    animation:ring 1.6s ease-out infinite;
+  }
+  .pin:focus-visible{outline:none}
+  .pin:focus-visible .core{filter:drop-shadow(0 0 0 2px var(--ring))}
+
+  @keyframes halo{
+    0%   {opacity:.22; transform:scale(1)}
+    100% {opacity:0;   transform:scale(2.6)}
+  }
+  @keyframes ring{
+    0%   {opacity:.55; transform:scale(1)}
+    100% {opacity:0;   transform:scale(2.4)}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .pin:hover .halo,.pin:focus-visible .halo,
+    .pin:hover .ring,.pin:focus-visible .ring{animation:none;opacity:.35}
+  }
+
+  /* —————————— TOOLTIP —————————— */
+  .tooltip{
+    position:absolute;pointer-events:none;
+    background:var(--text);color:#fff;
+    padding:10px 12px;border-radius:8px;
+    font-size:12px;line-height:1.4;
+    min-width:160px;max-width:220px;
+    transform:translate(-50%,-100%) translateY(-14px);
+    opacity:0;transition:opacity .15s ease, transform .2s cubic-bezier(.2,.8,.2,1);
+    box-shadow:0 18px 40px -20px rgba(0,0,0,.4);
+    z-index:5;
+  }
+  .tooltip[data-show="true"]{opacity:1;transform:translate(-50%,-100%) translateY(-18px)}
+  .tooltip::after{
+    content:"";position:absolute;left:50%;bottom:-5px;
+    width:10px;height:10px;background:var(--text);
+    transform:translateX(-50%) rotate(45deg);
+  }
+  .tooltip .t-name{font-weight:600;font-size:13px;margin-bottom:2px;display:flex;align-items:center;gap:8px}
+  .tooltip .t-name .tag{
+    font-size:9px;letter-spacing:.14em;background:rgba(255,255,255,.14);
+    padding:2px 6px;border-radius:3px;font-weight:500;
+  }
+  .tooltip .t-desc{color:rgba(255,255,255,.72);font-size:11.5px}
+
+  /* —————————— MODAL —————————— */
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(20,18,12,.45);
+    backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+    display:flex;align-items:center;justify-content:center;
+    opacity:0;pointer-events:none;transition:opacity .2s ease;
+    z-index:50;padding:24px;
+  }
+  .modal-backdrop[data-show="true"]{opacity:1;pointer-events:auto}
+  .modal{
+    background:var(--surface);
+    border-radius:16px;
+    width:min(440px,100%);
+    padding:28px 28px 24px;
+    transform:translateY(8px) scale(.98);
+    transition:transform .25s cubic-bezier(.2,.8,.2,1);
+    box-shadow:0 40px 80px -30px rgba(0,0,0,.45);
+    border:1px solid #e8e3d5;
+  }
+  .modal-backdrop[data-show="true"] .modal{transform:none}
+  .modal .m-eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+  .modal h2{font-family:var(--font-sans);font-weight:600;font-size:28px;margin:6px 0 10px;letter-spacing:-.01em}
+  .modal p{color:var(--muted);font-size:14px;line-height:1.55;margin:0 0 20px}
+  .modal .m-stats{
+    display:grid;grid-template-columns:1fr;gap:10px;margin:0 0 22px;
+    border-top:1px solid #ece6d6;border-bottom:1px solid #ece6d6;padding:14px 0;
+  }
+  .modal .m-stats div{display:flex;flex-direction:column;gap:2px}
+  .modal .m-stats span:first-child{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .modal .m-stats span:last-child{font-family:var(--font-sans);font-size:14px;color:var(--text);font-weight:500}
+  .modal .m-actions{display:flex;gap:10px;justify-content:flex-end}
+  .btn{
+    appearance:none;border:1px solid var(--text);background:transparent;color:var(--text);
+    font:inherit;font-size:13px;font-weight:500;
+    padding:10px 16px;border-radius:999px;cursor:pointer;
+    transition:background .15s ease,color .15s ease;
+  }
+  .btn:hover{background:var(--text);color:var(--bg)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover{background:#7a9a85;border-color:#7a9a85}
+
+  /* —————————— FOOTER —————————— */
+  footer.foot{
+    display:flex;justify-content:space-between;align-items:center;
+    color:var(--muted);font-size:12px;
+    padding-top:8px;
+  }
+  footer.foot a{color:var(--text);text-decoration:none;border-bottom:1px solid var(--muted)}
+
+  /* —————————— RESPONSIVE —————————— */
+  @media (max-width:780px){
+    .page{padding:28px 20px 40px;gap:20px}
+    .map-wrap{padding:0;border-radius:0}
+    .legend ul{grid-template-columns:1fr 1fr}
+    .pin .label{font-size:18px}
+    .pin .sublabel{font-size:13px}
+    .pin .core{r:7}
+    .map-meta{font-size:10px;letter-spacing:.14em}
+  }
+  @media (max-width:480px){
+    h1{font-size:34px}
+    .legend{width:100%}
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <header class="top">
+    <div>
+      <h1>Nuestros <em>showrooms</em></h1>
+      <p class="lede">Pasa el cursor por los puntos para descubrir nuestros showrooms. Haz clic para conocer la dirección exacta.</p>
+    </div>
+
+    <div class="legend" aria-label="Lista de showrooms">
+      <div class="legend-title">Showrooms</div>
+      <ul id="legend-list"></ul>
+    </div>
+  </header>
+
+  <!-- ——————————— MAPA ——————————— -->
+  <section class="map-wrap" aria-labelledby="map-title">
+    <svg id="map" class="map" viewBox="0 0 1000 640" role="img" aria-labelledby="map-title map-desc" preserveAspectRatio="xMidYMid meet">
+      <title id="map-title">Mapa interactivo de España</title>
+      <desc id="map-desc">Mapa minimalista de España con cuatro puntos clicables: Madrid, Barcelona, Valencia y Sevilla.</desc>
+
+      <!--
+        ESPAÑA · contorno tipo sketch (una sola línea continua).
+        Inspirado en boceto a mano alzada: península sin Portugal
+        separado, líneas irregulares, esquinas suaves.
+        Calibrado al bbox lon[-9.5,4.4] / lat[35.9,43.8] sobre
+        viewBox 1000×600 para que Madrid/BCN/VLC/SVQ caigan dentro.
+      -->
+      <!--
+        Contorno construido a partir de hitos costeros reales
+        (Estaca de Bares, Finisterre, Cádiz, Tarifa, Cabo de Gata,
+        Cabo de la Nao, Barcelona, Cabo de Creus, Pirineos, Bilbao…)
+        proyectados con bbox lon[-9.8, 4.7], lat[35.5, 44.2].
+        Trazado con curvas Catmull-Rom suavizadas a Bézier.
+      -->
+      <path class="country" d="
+        M 145,28
+        L 134,30 L 92,55 L 97,57 L 41,72 L 34,80 L 37,91
+        L 52,98 L 79,122 L 75,135 L 64,161
+        L 161,170 L 210,165
+        L 197,247 L 256,288 L 237,326
+        L 195,367 L 166,479
+        L 241,529 L 289,566 L 307,556 L 321,536
+        L 371,516 L 433,515 L 506,508 L 524,516
+        L 608,455 L 643,404 L 692,377
+        L 673,290 L 762,212 L 845,200 L 920,135
+        L 809,122 L 781,117 L 638,112
+        L 562,95 L 539,61 L 474,58
+        L 413,51 L 286,45 L 272,37 L 226,45 L 190,46
+        Z
+      "/>
+
+      <!-- Baleares -->
+      <g aria-hidden="true">
+        <!-- Mallorca ~39.6N, 2.9E -->
+        <path class="island" d="M 902 348 c 4 -4 14 -5 22 -2 c 8 3 14 8 14 13 c 0 5 -8 8 -18 7 c -10 -1 -22 -4 -22 -10 c 0 -3 1 -5 4 -8 z"/>
+        <!-- Menorca ~40.0N, 4.1E -->
+        <circle class="dot-island" cx="985" cy="318" r="2.5"/>
+        <!-- Ibiza ~38.9N, 1.4E -->
+        <circle class="dot-island" cx="772" cy="370" r="2.6"/>
+        <!-- Formentera -->
+        <circle class="dot-island" cx="780" cy="382" r="1.6"/>
+      </g>
+
+      <!-- Canarias (puntitos sueltos abajo a la izquierda) -->
+      <g aria-hidden="true">
+        <circle class="dot-island" cx="60"  cy="572" r="2.4"/>
+        <circle class="dot-island" cx="82"  cy="580" r="3"/>
+        <circle class="dot-island" cx="108" cy="576" r="2.2"/>
+        <circle class="dot-island" cx="132" cy="582" r="1.8"/>
+        <circle class="dot-island" cx="154" cy="578" r="1.6"/>
+        <circle class="dot-island" cx="176" cy="584" r="1.4"/>
+        <circle class="dot-island" cx="198" cy="580" r="1.2"/>
+      </g>
+
+      <!-- ——————————— PINES (rellenados por JS) ——————————— -->
+      <g id="pins"></g>
+    </svg>
+  </section>
+
+  <footer class="foot" hidden>
+    <span>Diseño minimalista · SVG vectorial</span>
+    <span>Pulsa <kbd style="font:inherit;border:1px solid var(--muted);border-radius:4px;padding:1px 6px">Tab</kbd> para navegar con teclado</span>
+  </footer>
+</div>
+
+<!-- Tooltip flotante -->
+<div id="tooltip" class="tooltip" role="status" aria-live="polite"></div>
+
+<!-- Modal -->
+<div id="modal-backdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title" hidden>
+  <div class="modal">
+    <div class="m-eyebrow" id="modal-eyebrow">Ciudad</div>
+    <h2 id="modal-title">—</h2>
+    <p id="modal-desc">—</p>
+    <div class="m-stats" id="modal-stats"></div>
+    <div class="m-actions">
+      <button class="btn" id="modal-close">Cerrar</button>
+      <a class="btn primary" id="modal-link" href="#" target="_blank" rel="noopener">Visitar web</a>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ─────────────────────────────────────────────────────────────────
+   1) HELPER: convertir lat/lon (WGS84) al sistema del SVG.
+      Bounding box usado: lon ∈ [-9.5, 4.4], lat ∈ [35.9, 43.8].
+      viewBox del mapa: 1000 × 600 (la zona Canarias está fuera de
+      este box; si quieres añadir Las Palmas, posiciónala a mano).
+   ───────────────────────────────────────────────────────────────── */
+function latLonToXY(lat, lon){
+  const LON_MIN=-9.8, LON_MAX=4.7, LAT_MIN=35.5, LAT_MAX=44.2;
+  const W=1000, H=600;
+  const x = (lon - LON_MIN) / (LON_MAX - LON_MIN) * W;
+  const y = (LAT_MAX - lat) / (LAT_MAX - LAT_MIN) * H;
+  return [Math.round(x*100)/100, Math.round(y*100)/100];
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   2) CIUDADES — edita aquí para cambiar destinos, etiquetas,
+      acción (tooltip / modal / url) y enlaces.
+   ───────────────────────────────────────────────────────────────── */
+const CITIES = [
+  {
+    id:"madrid",
+    name:"Madrid",
+    region:"Abai Home",
+    lat:40.4168, lon:-3.7038,
+    labelOffset:[14,-12],
+    description:"Villaviciosa de Odón",
+    stats:[
+      ["Dirección","Avd. Príncipe de Asturias, 36"],
+      ["CP / Localidad","28670 Villaviciosa de Odón"],
+    ],
+    action:"modal",
+    href:"https://abaihome.com/nuestras-tiendas/",
+  },
+  {
+    id:"barcelona",
+    name:"Barcelona",
+    region:"Todoplano",
+    lat:41.3851, lon:2.1734,
+    labelOffset:[14,-12],
+    description:"Pau Claris, 184 · Barcelona",
+    stats:[
+      ["Teléfono","(+34) 93 707 14 97"],
+      ["Email","info@grupotodoplano.es"],
+    ],
+    action:"modal",
+    href:"https://www.grupotodoplano.com/?srsltid=AfmBOop7mp3XUHFcPqevoTDVSxLiemzds29TiXA-zqId2kV4xiIqfPZ7",
+  },
+  {
+    id:"valencia",
+    name:"Valencia",
+    region:"Urban Mobel",
+    lat:39.4699, lon:-0.3763,
+    labelOffset:[14,-12],
+    description:"Avinguda de la Albufera, 62 · 46910 Alfafar, Valencia",
+    stats:[
+      ["Teléfono","694 420 727"],
+      ["Email","comercial@urbanmobel.com"],
+    ],
+    action:"modal",
+    href:"https://urbanmobel.com/",
+  },
+  {
+    id:"sevilla",
+    name:"Sevilla",
+    region:"Muebles Sarria",
+    lat:37.3886, lon:-5.9823,
+    labelOffset:[-14,-12],
+    labelAnchor:"end",
+    description:"Av. de Adolfo Suárez, 4 · 41704 Dos Hermanas, Sevilla",
+    stats:[
+      ["Teléfono","955 092 959"],
+      ["Localidad","Dos Hermanas"],
+    ],
+    action:"modal",
+    href:"https://mueblesarria.com/tienda/page/21/",
+  },
+];
+
+/* ─────────────────────────────────────────────────────────────────
+   3) TWEAKS — modo de interacción global por defecto. Si se cambia,
+      sobreescribe el `action` de cada ciudad.
+   ───────────────────────────────────────────────────────────────── */
+const TWEAKS = /*EDITMODE-BEGIN*/{
+  "interactionMode": "perCity",   // "perCity" | "tooltip" | "modal" | "url"
+  "showLabels": true,
+  "accentColor": "#8faf9a",
+  "landColor":   "#e8e4dc",
+  "bgColor":     "#f5f3ee"
+}/*EDITMODE-END*/;
+
+/* ─────────────────────────────────────────────────────────────────
+   4) RENDER DE PINES Y LEYENDA
+   ───────────────────────────────────────────────────────────────── */
+const svg     = document.getElementById("map");
+const pinsG   = document.getElementById("pins");
+const legend  = document.getElementById("legend-list");
+const tooltip = document.getElementById("tooltip");
+const mapWrap = document.querySelector(".map-wrap");
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+function makePin(city, idx){
+  const [x,y] = latLonToXY(city.lat, city.lon);
+  city._xy = [x,y];
+
+  const g = document.createElementNS(SVG_NS,"g");
+  g.setAttribute("class","pin");
+  g.setAttribute("transform",`translate(${x} ${y})`);
+  g.setAttribute("tabindex","0");
+  g.setAttribute("role","button");
+  g.setAttribute("aria-label",`${city.name}, ${city.region}`);
+  g.dataset.id = city.id;
+
+  // halo animado
+  const halo = document.createElementNS(SVG_NS,"circle");
+  halo.setAttribute("class","halo");
+  halo.setAttribute("r","10");
+  g.appendChild(halo);
+
+  // anillo pulsante
+  const ring = document.createElementNS(SVG_NS,"circle");
+  ring.setAttribute("class","ring");
+  ring.setAttribute("r","10");
+  g.appendChild(ring);
+
+  // núcleo blanco (borde)
+  const outer = document.createElementNS(SVG_NS,"circle");
+  outer.setAttribute("r","8");
+  outer.setAttribute("fill","var(--bg)");
+  g.appendChild(outer);
+
+  // núcleo color
+  const core = document.createElementNS(SVG_NS,"circle");
+  core.setAttribute("class","core");
+  core.setAttribute("r","5");
+  g.appendChild(core);
+
+  // punto interior
+  const inner = document.createElementNS(SVG_NS,"circle");
+  inner.setAttribute("class","inner");
+  inner.setAttribute("r","1.6");
+  g.appendChild(inner);
+
+  // etiqueta
+  if(TWEAKS.showLabels){
+    const [dx,dy] = city.labelOffset || [12,-10];
+    const anchor  = city.labelAnchor || "start";
+
+    const sub = document.createElementNS(SVG_NS,"text");
+    sub.setAttribute("class","sublabel");
+    sub.setAttribute("x", dx);
+    sub.setAttribute("y", dy - 12);
+    sub.setAttribute("text-anchor", anchor);
+    sub.textContent = String(idx+1).padStart(2,"0");
+    g.appendChild(sub);
+
+    const label = document.createElementNS(SVG_NS,"text");
+    label.setAttribute("class","label");
+    label.setAttribute("x", dx);
+    label.setAttribute("y", dy);
+    label.setAttribute("text-anchor", anchor);
+    label.textContent = city.name;
+    g.appendChild(label);
+  }
+
+  // —— interacciones ——
+  g.addEventListener("mouseenter", () => showTooltip(city));
+  g.addEventListener("mouseleave", () => hideTooltip());
+  g.addEventListener("focus",      () => showTooltip(city));
+  g.addEventListener("blur",       () => hideTooltip());
+  g.addEventListener("click",      () => activate(city));
+  g.addEventListener("keydown", e => {
+    if(e.key==="Enter" || e.key===" "){ e.preventDefault(); activate(city); }
+  });
+
+  return g;
+}
+
+function renderLegend(){
+  legend.innerHTML = "";
+  CITIES.forEach((c, i) => {
+    const li = document.createElement("li");
+    li.dataset.id = c.id;
+    li.innerHTML = `
+      <span class="dot"></span>
+      <span class="name">${c.name}</span>
+      <span class="num">${String(i+1).padStart(2,"0")}</span>
+    `;
+    li.addEventListener("mouseenter", () => {
+      const pin = pinsG.querySelector(`[data-id="${c.id}"]`);
+      if(pin){ pin.dispatchEvent(new Event("mouseenter")); pin.classList.add("hot"); }
+      li.dataset.active="true";
+    });
+    li.addEventListener("mouseleave", () => {
+      hideTooltip();
+      li.dataset.active="false";
+    });
+    li.addEventListener("click", () => activate(c));
+    legend.appendChild(li);
+  });
+}
+
+CITIES.forEach((c, i) => pinsG.appendChild(makePin(c, i)));
+renderLegend();
+
+/* ─────────────────────────────────────────────────────────────────
+   5) TOOLTIP + MODAL
+   ───────────────────────────────────────────────────────────────── */
+function getMode(city){
+  return TWEAKS.interactionMode === "perCity" ? city.action : TWEAKS.interactionMode;
+}
+
+function showTooltip(city){
+  const [sx, sy] = svgPointToScreen(city._xy[0], city._xy[1]);
+  const wrapBox  = mapWrap.getBoundingClientRect();
+  tooltip.style.left = (sx - wrapBox.left + window.scrollX) + "px";
+  tooltip.style.top  = (sy - wrapBox.top  + window.scrollY) + "px";
+
+  // posición absoluta dentro de map-wrap (no del documento)
+  tooltip.style.left = (sx - wrapBox.left) + "px";
+  tooltip.style.top  = (sy - wrapBox.top)  + "px";
+
+  const mode = getMode(city);
+  const tag = mode === "url" ? "Visitar →" : mode === "modal" ? "Ver más" : "Info";
+  tooltip.innerHTML = `
+    <div class="t-name">${city.name} <span class="tag">${tag}</span></div>
+    <div class="t-desc">${city.region}</div>
+  `;
+  tooltip.dataset.show = "true";
+  // mover tooltip dentro del map-wrap si no lo está
+  if(tooltip.parentElement !== mapWrap) mapWrap.appendChild(tooltip);
+}
+function hideTooltip(){ tooltip.dataset.show = "false"; }
+
+function svgPointToScreen(x, y){
+  const pt = svg.createSVGPoint();
+  pt.x = x; pt.y = y;
+  const m = svg.getScreenCTM();
+  const p = pt.matrixTransform(m);
+  return [p.x, p.y];
+}
+
+/* — Modal — */
+const backdrop = document.getElementById("modal-backdrop");
+const mTitle   = document.getElementById("modal-title");
+const mDesc    = document.getElementById("modal-desc");
+const mEyebrow = document.getElementById("modal-eyebrow");
+const mStats   = document.getElementById("modal-stats");
+const mLink    = document.getElementById("modal-link");
+document.getElementById("modal-close").addEventListener("click", closeModal);
+backdrop.addEventListener("click", e => { if(e.target===backdrop) closeModal(); });
+document.addEventListener("keydown", e => { if(e.key==="Escape") closeModal(); });
+
+function openModal(city){
+  mTitle.textContent   = city.name;
+  mEyebrow.textContent = city.region;
+  mDesc.textContent    = city.description;
+  mStats.innerHTML     = (city.stats||[]).map(([k,v])=>`<div><span>${k}</span><span>${v}</span></div>`).join("");
+  mLink.href           = city.href || "#";
+  backdrop.hidden = false;
+  requestAnimationFrame(()=> backdrop.dataset.show = "true");
+}
+function closeModal(){
+  backdrop.dataset.show = "false";
+  setTimeout(()=> backdrop.hidden = true, 200);
+}
+
+/* — Acción según el modo de la ciudad — */
+function activate(city){
+  const mode = getMode(city);
+  if(mode === "url"){
+    if(city.href) window.open(city.href, "_blank", "noopener");
+  } else if(mode === "tooltip"){
+    showTooltip(city);
+    setTimeout(hideTooltip, 1800);
+  } else {
+    openModal(city);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   6) Reposicionar tooltip si cambia el viewport
+   ───────────────────────────────────────────────────────────────── */
+window.addEventListener("resize", hideTooltip);
+
+/* ─────────────────────────────────────────────────────────────────
+   7) TWEAKS PANEL (host opcional). Si no hay host, no pasa nada.
+   ───────────────────────────────────────────────────────────────── */
+(function tweaksHost(){
+  let panel;
+  function applyTheme(){
+    document.documentElement.style.setProperty("--accent", TWEAKS.accentColor);
+    document.documentElement.style.setProperty("--land",   TWEAKS.landColor);
+    document.documentElement.style.setProperty("--bg",     TWEAKS.bgColor);
+    document.documentElement.style.setProperty("--ring",   hexToRgba(TWEAKS.accentColor, .18));
+  }
+  function hexToRgba(hex, a){
+    const m = hex.replace("#","");
+    const v = m.length===3 ? m.split("").map(c=>c+c).join("") : m;
+    const r=parseInt(v.slice(0,2),16),g=parseInt(v.slice(2,4),16),b=parseInt(v.slice(4,6),16);
+    return `rgba(${r},${g},${b},${a})`;
+  }
+
+  function buildPanel(){
+    panel = document.createElement("div");
+    panel.id = "tweaks-panel";
+    panel.style.cssText = `
+      position:fixed;right:18px;bottom:18px;width:280px;
+      background:var(--surface);border:1px solid #e8e3d5;border-radius:14px;
+      padding:16px;box-shadow:0 24px 60px -20px rgba(0,0,0,.35);
+      font-family:var(--font-sans);font-size:13px;color:var(--text);
+      z-index:60;display:none;
+    `;
+    panel.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <strong style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)">Tweaks</strong>
+        <button id="tw-close" style="border:none;background:transparent;cursor:pointer;font-size:16px;color:var(--muted)">×</button>
+      </div>
+
+      <label style="display:block;margin-bottom:10px">
+        <span style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Modo de interacción</span>
+        <select id="tw-mode" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:6px">
+          <option value="perCity">Por ciudad (modal)</option>
+          <option value="tooltip">Solo tooltip</option>
+          <option value="modal">Siempre modal</option>
+          <option value="url">Abrir URL</option>
+        </select>
+      </label>
+
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <input id="tw-labels" type="checkbox"/>
+        <span>Mostrar etiquetas</span>
+      </label>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <label style="font-size:11px;color:var(--muted)">
+          Acento
+          <input id="tw-accent" type="color" style="width:100%;height:30px;border:none;background:none"/>
+        </label>
+        <label style="font-size:11px;color:var(--muted)">
+          Tierra
+          <input id="tw-land" type="color" style="width:100%;height:30px;border:none;background:none"/>
+        </label>
+        <label style="font-size:11px;color:var(--muted)">
+          Fondo
+          <input id="tw-bg" type="color" style="width:100%;height:30px;border:none;background:none"/>
+        </label>
+      </div>
+    `;
+    document.body.appendChild(panel);
+
+    const $mode = panel.querySelector("#tw-mode");
+    const $lab  = panel.querySelector("#tw-labels");
+    const $acc  = panel.querySelector("#tw-accent");
+    const $lnd  = panel.querySelector("#tw-land");
+    const $bg   = panel.querySelector("#tw-bg");
+
+    $mode.value = TWEAKS.interactionMode;
+    $lab.checked= TWEAKS.showLabels;
+    $acc.value  = TWEAKS.accentColor;
+    $lnd.value  = TWEAKS.landColor;
+    $bg.value   = TWEAKS.bgColor;
+
+    function persist(edits){
+      Object.assign(TWEAKS, edits);
+      try { window.parent.postMessage({type:"__edit_mode_set_keys", edits}, "*"); } catch(e){}
+    }
+
+    $mode.addEventListener("change",()=> persist({interactionMode:$mode.value}));
+    $lab.addEventListener("change", ()=> { persist({showLabels:$lab.checked}); rerenderPins(); });
+    $acc.addEventListener("input",  ()=> { persist({accentColor:$acc.value}); applyTheme(); });
+    $lnd.addEventListener("input",  ()=> { persist({landColor:$lnd.value}); applyTheme(); });
+    $bg.addEventListener("input",   ()=> { persist({bgColor:$bg.value}); applyTheme(); });
+
+    panel.querySelector("#tw-close").addEventListener("click", ()=>{
+      panel.style.display = "none";
+      try{ window.parent.postMessage({type:"__edit_mode_dismissed"},"*"); }catch(e){}
+    });
+  }
+
+  function rerenderPins(){
+    pinsG.innerHTML = "";
+    CITIES.forEach((c,i)=> pinsG.appendChild(makePin(c,i)));
+  }
+
+  // protocolo edit mode
+  window.addEventListener("message", (e)=>{
+    const t = e.data && e.data.type;
+    if(t === "__activate_edit_mode"){
+      if(!panel) buildPanel();
+      panel.style.display = "block";
+    } else if(t === "__deactivate_edit_mode"){
+      if(panel) panel.style.display = "none";
+    }
+  });
+
+  applyTheme();
+  try { window.parent.postMessage({type:"__edit_mode_available"}, "*"); } catch(e){}
+})();
+</script>
+</body>
+</html>
