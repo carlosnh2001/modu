@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Check, ZoomIn, X } from "lucide-react";
+import { Check, ZoomIn, X, ArrowLeftRight } from "lucide-react";
+import type { Orientation } from "@/hooks/useCart";
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
@@ -26,12 +27,14 @@ export default function ComplementoConfigurator({ comp }: { comp: Complemento })
   const [selectedModel, setSelectedModel] = useState<SofaModel | null>(null);
   const [added, setAdded] = useState(false);
   const [zoomedFabric, setZoomedFabric] = useState<Fabric | null>(null);
+  const [orientation, setOrientation] = useState<Orientation>("izquierda");
   const { addComplemento } = useCart();
 
+  const needsOrientation = comp.id === "chaise-longue";
   const familyFabrics = allFabrics.filter((f) => f.family === fabricFamilies[familyKey].name);
 
   const handleAdd = () => {
-    addComplemento(comp, fabric);
+    addComplemento(comp, fabric, needsOrientation ? orientation : undefined);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
@@ -179,6 +182,34 @@ export default function ComplementoConfigurator({ comp }: { comp: Complemento })
           ))}
         </div>
       </div>
+
+      {/* Orientation selector — only for Chaise Longue */}
+      {needsOrientation && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <ArrowLeftRight size={14} className="text-[#9B9B90]" />
+            <p className="text-xs font-semibold text-[#9B9B90] uppercase tracking-wider">Vista de frente</p>
+          </div>
+          <div className="flex gap-2">
+            {(["izquierda", "derecha"] as Orientation[]).map((side) => (
+              <button
+                key={side}
+                onClick={() => setOrientation(side)}
+                className={`flex-1 py-2.5 rounded-lg border-2 text-sm font-medium transition-all ${
+                  orientation === side
+                    ? "border-[#1E1E1C] bg-[#1E1E1C] text-[#F2F1EC]"
+                    : "border-[#CEC8BA] text-[#9B9B90] hover:border-[#9B9B90]"
+                }`}
+              >
+                V/F {side.charAt(0).toUpperCase() + side.slice(1)}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-[#9B9B90]">
+            Indica si la chaise longue queda a tu izquierda o derecha cuando miras el sofá de frente.
+          </p>
+        </div>
+      )}
 
       {/* CTAs */}
       <div className="space-y-3">

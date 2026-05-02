@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Check, ChevronRight, ZoomIn, X } from "lucide-react";
+import { Check, ChevronRight, ZoomIn, X, ArrowLeftRight } from "lucide-react";
+import type { Orientation } from "@/hooks/useCart";
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
@@ -28,12 +29,15 @@ export default function SofaConfigurator({ model }: { model: SofaModel }) {
   const [fabric, setFabric] = useState<Fabric>(allFabrics[0]);
   const [added, setAdded] = useState(false);
   const [zoomedFabric, setZoomedFabric] = useState<Fabric | null>(null);
+  const [orientation, setOrientation] = useState<Orientation>("izquierda");
   const { addSofa } = useCart();
+
+  const needsOrientation = selectedConfig.id === "family";
 
   const familyFabrics = allFabrics.filter((f) => f.family === fabricFamilies[familyKey].name);
 
   const handleAddToCart = () => {
-    addSofa(model, selectedConfig, fabric);
+    addSofa(model, selectedConfig, fabric, needsOrientation ? orientation : undefined);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
@@ -233,6 +237,34 @@ export default function SofaConfigurator({ model }: { model: SofaModel }) {
               <FabricSwatch key={f.id} fabric={f} selected={fabric.id === f.id} onClick={() => setFabric(f)} />
             ))}
           </div>
+
+          {/* Orientation selector — only for Family */}
+          {needsOrientation && (
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center gap-2">
+                <ArrowLeftRight size={14} className="text-[#9B9B90]" />
+                <p className="text-xs font-semibold text-[#9B9B90] uppercase tracking-wider">Vista de frente</p>
+              </div>
+              <div className="flex gap-2">
+                {(["izquierda", "derecha"] as Orientation[]).map((side) => (
+                  <button
+                    key={side}
+                    onClick={() => setOrientation(side)}
+                    className={`flex-1 py-2.5 rounded-lg border-2 text-sm font-medium transition-all ${
+                      orientation === side
+                        ? "border-[#1E1E1C] bg-[#1E1E1C] text-[#F2F1EC]"
+                        : "border-[#CEC8BA] text-[#9B9B90] hover:border-[#9B9B90]"
+                    }`}
+                  >
+                    V/F {side.charAt(0).toUpperCase() + side.slice(1)}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-[#9B9B90]">
+                Indica si la chaise longue queda a tu izquierda o derecha cuando miras el sofá de frente.
+              </p>
+            </div>
+          )}
 
           {/* CTA */}
           <div className="space-y-3 pt-2">

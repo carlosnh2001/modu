@@ -3,27 +3,28 @@
 import { create } from "zustand";
 import type { SofaModel, Complemento, Configuration, Fabric } from "@/data/products";
 
+export type Orientation = "izquierda" | "derecha";
+
 export type CartItem = {
   id: string;
-  // sofa model items
   model?: SofaModel;
   config?: Configuration;
-  // complemento items
   complemento?: Complemento;
   fabric: Fabric;
   quantity: number;
-  // display helpers
   displayName: string;
   price: number;
   image: string;
+  orientation?: Orientation;
+  cojinSize?: string;
 };
 
 type CartStore = {
   items: CartItem[];
   isOpen: boolean;
   includesRemoval: boolean;
-  addSofa: (model: SofaModel, config: Configuration, fabric: Fabric) => void;
-  addComplemento: (comp: Complemento, fabric: Fabric) => void;
+  addSofa: (model: SofaModel, config: Configuration, fabric: Fabric, orientation?: Orientation) => void;
+  addComplemento: (comp: Complemento, fabric: Fabric, orientation?: Orientation, cojinSize?: string, cojinPrice?: number) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   toggleCart: () => void;
@@ -39,16 +40,17 @@ export const useCart = create<CartStore>((set, get) => ({
   isOpen: false,
   includesRemoval: false,
 
-  addSofa: (model, config, fabric) => {
-    const id = `${model.id}-${config.id}-${fabric.id}`;
+  addSofa: (model, config, fabric, orientation) => {
+    const id = `${model.id}-${config.id}-${fabric.id}${orientation ? `-${orientation}` : ""}`;
     const existing = get().items.find((i) => i.id === id);
     if (existing) {
       set((s) => ({ items: s.items.map((i) => i.id === id ? { ...i, quantity: i.quantity + 1 } : i) }));
     } else {
+      const orientLabel = orientation ? ` · V/F ${orientation.charAt(0).toUpperCase() + orientation.slice(1)}` : "";
       const item: CartItem = {
-        id, model, config, fabric,
+        id, model, config, fabric, orientation,
         quantity: 1,
-        displayName: `${model.name} — ${config.name}`,
+        displayName: `${model.name} — ${config.name}${orientLabel}`,
         price: config.price,
         image: model.images.principal,
       };
@@ -57,17 +59,19 @@ export const useCart = create<CartStore>((set, get) => ({
     set({ isOpen: true });
   },
 
-  addComplemento: (comp, fabric) => {
-    const id = `${comp.id}-${fabric.id}`;
+  addComplemento: (comp, fabric, orientation, cojinSize, cojinPrice) => {
+    const id = `${comp.id}-${fabric.id}${orientation ? `-${orientation}` : ""}${cojinSize ? `-${cojinSize}` : ""}`;
     const existing = get().items.find((i) => i.id === id);
     if (existing) {
       set((s) => ({ items: s.items.map((i) => i.id === id ? { ...i, quantity: i.quantity + 1 } : i) }));
     } else {
+      const orientLabel = orientation ? ` · V/F ${orientation.charAt(0).toUpperCase() + orientation.slice(1)}` : "";
+      const sizeLabel = cojinSize ? ` · ${cojinSize}` : "";
       const item: CartItem = {
-        id, complemento: comp, fabric,
+        id, complemento: comp, fabric, orientation, cojinSize,
         quantity: 1,
-        displayName: comp.name,
-        price: comp.price,
+        displayName: `${comp.name}${sizeLabel}${orientLabel}`,
+        price: cojinPrice ?? comp.price,
         image: comp.image,
       };
       set((s) => ({ items: [...s.items, item] }));
