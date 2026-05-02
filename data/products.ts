@@ -82,6 +82,7 @@ export type Configuration = {
   image: string;
   badge?: string;
   covers: string;
+  gift?: string;
 };
 
 export const CONFIGURATIONS: Configuration[] = [
@@ -109,6 +110,7 @@ export const CONFIGURATIONS: Configuration[] = [
     image: "/images/formatos/urban.png",
     badge: "Más vendido",
     covers: "Funda de asiento y respaldo desenfundable y reversible. Dale la vuelta al cojín para aprovechar ambas caras y doblar la vida útil del tapizado.",
+    gift: "2 cojines decorativos 45×45 de regalo",
   },
   {
     id: "family",

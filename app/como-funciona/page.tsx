@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 
 export const metadata: Metadata = { title: "Cómo funciona" };
 
@@ -37,10 +38,10 @@ const STEPS = [
 ];
 
 const MODULES = [
-  { name: "Módulo de asiento", desc: "Base del sistema. 90 cm de ancho." },
-  { name: "Brazo", desc: "Se acopla a cualquier extremo." },
-  { name: "Chaise longue", desc: "Transforma el sofá. 160 cm." },
-  { name: "Esquina", desc: "Configura en L sin restricciones." },
+  { name: "Módulo de asiento", desc: "Base del sistema. 90 cm de ancho.", image: "/images/complementos/modulo-suelto.png" },
+  { name: "Brazo", desc: "Se acopla a cualquier extremo.", image: "/images/formatos/compact.png" },
+  { name: "Chaise longue", desc: "Transforma el sofá. 160 cm.", image: "/images/complementos/chaise-longue.png" },
+  { name: "Esquina", desc: "Configura en L sin restricciones.", image: "/images/complementos/rincon.png" },
 ];
 
 export default function ComoFuncionaPage() {
@@ -94,7 +95,16 @@ export default function ComoFuncionaPage() {
                 key={m.name}
                 className="p-5 bg-[#CEC8BA]/20 border border-[#CEC8BA] rounded-xl"
               >
-                <div className="w-10 h-10 bg-[#1E1E1C] rounded-lg mb-4" />
+                <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden mb-4 bg-[#CEC8BA]/30">
+                  <Image
+                    src={m.image}
+                    alt={m.name}
+                    fill
+                    quality={85}
+                    className="object-cover"
+                    sizes="(max-width: 640px) 50vw, 25vw"
+                  />
+                </div>
                 <p className="font-semibold text-[#1E1E1C] text-sm mb-1">
                   {m.name}
                 </p>

@@ -132,6 +132,9 @@ export default function SofaConfigurator({ model }: { model: SofaModel }) {
                   </div>
                   <p className="text-xs text-[#9B9B90]">{cfg.composition}</p>
                   <p className="text-xs text-[#9B9B90] italic mt-0.5">{cfg.tagline}</p>
+                  {cfg.gift && (
+                    <p className="text-[10px] font-semibold text-[#7DAF96] mt-1">🎁 {cfg.gift}</p>
+                  )}
                 </div>
                 <div className="text-right shrink-0">
                   <p className="font-semibold text-[#1E1E1C]">{cfg.price.toLocaleString("es-ES")} €</p>
@@ -170,6 +173,9 @@ export default function SofaConfigurator({ model }: { model: SofaModel }) {
             <div>
               <p className="text-xs font-semibold text-[#1E1E1C]">{selectedConfig.name} — {selectedConfig.price.toLocaleString("es-ES")} €</p>
               <p className="text-xs text-[#9B9B90]">{selectedConfig.composition}</p>
+              {selectedConfig.gift && (
+                <p className="text-[10px] font-semibold text-[#7DAF96] mt-0.5">🎁 {selectedConfig.gift}</p>
+              )}
             </div>
           </div>
 
