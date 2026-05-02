@@ -342,6 +342,17 @@ export default function SofaConfigurator({ model }: { model: SofaModel }) {
           </AccordionContent>
         </AccordionItem>
 
+        <AccordionItem value="fundas" className="border-[#CEC8BA]">
+          <AccordionTrigger className="text-sm font-medium text-[#1E1E1C] py-4 hover:no-underline">Fundas desenfundables y reversibles</AccordionTrigger>
+          <AccordionContent className="text-sm text-[#9B9B90] leading-relaxed space-y-2">
+            <p>{selectedConfig.covers}</p>
+            <p className="flex items-center gap-2">
+              <span className="text-[#7DAF96] font-bold">×2</span>
+              vida útil del tapizado gracias al sistema reversible.
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+
         <AccordionItem value="envio" className="border-[#CEC8BA]">
           <AccordionTrigger className="text-sm font-medium text-[#1E1E1C] py-4 hover:no-underline">Envío</AccordionTrigger>
           <AccordionContent className="text-sm text-[#9B9B90] leading-relaxed space-y-1">

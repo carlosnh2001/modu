@@ -79,8 +79,9 @@ export type Configuration = {
     seatHeight: string;
     note?: string;
   };
-  image: string;       // format diagram image
+  image: string;
   badge?: string;
+  covers: string;
 };
 
 export const CONFIGURATIONS: Configuration[] = [
@@ -94,6 +95,7 @@ export const CONFIGURATIONS: Configuration[] = [
     assembly: "Sin herramientas. Máximo 15 minutos.",
     dimensions: { width: "220 cm", depth: "105 cm", height: "90 cm", seatHeight: "42 cm" },
     image: "/images/formatos/compact.png",
+    covers: "Funda de asiento y respaldo desenfundable y reversible. Dale la vuelta al cojín para aprovechar ambas caras y doblar la vida útil del tapizado.",
   },
   {
     id: "urban",
@@ -106,6 +108,7 @@ export const CONFIGURATIONS: Configuration[] = [
     dimensions: { width: "310 cm", depth: "105 cm", height: "90 cm", seatHeight: "42 cm" },
     image: "/images/formatos/urban.png",
     badge: "Más vendido",
+    covers: "Funda de asiento y respaldo desenfundable y reversible. Dale la vuelta al cojín para aprovechar ambas caras y doblar la vida útil del tapizado.",
   },
   {
     id: "family",
@@ -123,6 +126,7 @@ export const CONFIGURATIONS: Configuration[] = [
       note: "El largo es 310 cm. El fondo varía según si se elige chaise longue o esquina.",
     },
     image: "/images/formatos/family.png",
+    covers: "Funda de asiento y respaldo desenfundable y reversible. Dale la vuelta al cojín para aprovechar ambas caras y doblar la vida útil del tapizado.",
   },
 ];
 
@@ -206,6 +210,20 @@ export const sofaModels: SofaModel[] = [
 
 // ─── Complementos ─────────────────────────────────────────────────────────────
 
+export type CojinSize = {
+  id: string;
+  label: string;
+  price: number;
+  image: string;
+  dimensions: string;
+};
+
+export const COJIN_SIZES: CojinSize[] = [
+  { id: "45x45", label: "45 × 45 cm", price: 49, image: "/images/complementos/cojin-45x45.png", dimensions: "45 × 45 cm" },
+  { id: "50x50", label: "50 × 50 cm", price: 54, image: "/images/complementos/cojin-50x50.png", dimensions: "50 × 50 cm" },
+  { id: "55x55", label: "55 × 55 cm", price: 59, image: "/images/complementos/cojin-55x55.png", dimensions: "55 × 55 cm" },
+];
+
 export type Complemento = {
   id: string;
   slug: string;
@@ -214,7 +232,9 @@ export type Complemento = {
   description: string;
   price: number;
   image: string;
+  secondaryImage?: string;
   fabrics: Fabric[];
+  isCojin?: boolean;
 };
 
 export const complementos: Complemento[] = [
@@ -247,6 +267,18 @@ export const complementos: Complemento[] = [
     price: 480,
     image: "/images/complementos/rincon.png",
     fabrics: allFabrics,
+  },
+  {
+    id: "cojin-decorativo",
+    slug: "cojin-decorativo",
+    name: "Cojín decorativo",
+    tagline: "El detalle que completa tu Modu",
+    description: "Cojín decorativo con funda desenfundable en los mismos tejidos que tu sofá. Relleno de fibra siliconada virgen para un tacto suave y duradero. Disponible en tres medidas.",
+    price: 49,
+    image: "/images/complementos/cojin-principal.png",
+    secondaryImage: "/images/complementos/cojin-50x50.png",
+    fabrics: allFabrics,
+    isCojin: true,
   },
 ];
 

@@ -1,11 +1,13 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import { notFound } from "next/navigation";
 import { sofaModels, complementos } from "@/data/products";
+import type { Complemento } from "@/data/products";
 import ProductGallery from "@/components/product/ProductGallery";
 import SofaConfigurator from "@/components/product/SofaConfigurator";
 import ComplementoConfigurator from "@/components/product/ComplementoConfigurator";
+import CojinConfigurator from "@/components/product/CojinConfigurator";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -75,16 +77,29 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
   }
 
   // ── COMPLEMENTO PAGE ──
+  const isCojin = comp!.isCojin === true;
+
   return (
     <div className="pt-32 pb-24">
       <div className="modu-container">
         <div className="grid grid-cols-1 lg:grid-cols-[55%_1fr] gap-12 lg:gap-16 mb-20">
-          <div className="flex flex-col gap-4">
-            <div className="relative aspect-square rounded-2xl overflow-hidden bg-[#CEC8BA]/20">
-              <Image src={comp!.image} alt={comp!.name} fill quality={95} className="object-cover" priority sizes="55vw" />
+          {/* Gallery */}
+          {isCojin ? (
+            <CojinGallery comp={comp!} />
+          ) : (
+            <div className="flex flex-col gap-4">
+              <div className="relative aspect-square rounded-2xl overflow-hidden bg-[#CEC8BA]/20">
+                <Image src={comp!.image} alt={comp!.name} fill quality={95} className="object-cover" priority sizes="55vw" />
+              </div>
             </div>
-          </div>
-          <ComplementoConfigurator comp={comp!} />
+          )}
+
+          {/* Configurator */}
+          {isCojin ? (
+            <CojinConfigurator comp={comp!} />
+          ) : (
+            <ComplementoConfigurator comp={comp!} />
+          )}
         </div>
 
         {/* Upsell to models */}
@@ -98,6 +113,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
                     src={m.images.principal}
                     alt={m.name}
                     fill
+                    quality={90}
                     className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
                     sizes="33vw"
                   />
@@ -114,6 +130,37 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function CojinGallery({ comp }: { comp: Complemento }) {
+  const [main, setMain] = useState<"principal" | "secondary">("principal");
+  const src = main === "principal" ? comp.image : (comp.secondaryImage ?? comp.image);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="relative aspect-square rounded-2xl overflow-hidden bg-[#CEC8BA]/20">
+        <Image src={src} alt={comp.name} fill quality={95} className="object-cover" priority sizes="55vw" />
+      </div>
+      {comp.secondaryImage && (
+        <div className="flex gap-3">
+          {[
+            { key: "principal" as const, src: comp.image },
+            { key: "secondary" as const, src: comp.secondaryImage },
+          ].map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setMain(t.key)}
+              className={`relative w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${
+                main === t.key ? "border-[#1E1E1C]" : "border-transparent hover:border-[#9B9B90]"
+              }`}
+            >
+              <Image src={t.src} alt={comp.name} fill quality={80} className="object-cover" sizes="80px" />
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
