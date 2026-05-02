@@ -54,7 +54,7 @@ export default function CojinConfigurator({ comp }: { comp: Complemento }) {
 
       <div className="flex items-baseline gap-2">
         <p className="text-3xl font-semibold text-[#1E1E1C]">{selectedSize.price.toLocaleString("es-ES")} €</p>
-        <p className="text-sm text-[#9B9B90]">— {selectedSize.label}</p>
+        <p className="text-sm text-[#9B9B90]">{selectedSize.label}</p>
       </div>
 
       <p className="text-sm text-[#9B9B90] leading-relaxed">{comp.description}</p>
@@ -173,7 +173,7 @@ export default function CojinConfigurator({ comp }: { comp: Complemento }) {
         >
           {added
             ? <><Check size={16} /> Añadido al pedido</>
-            : `Añadir al carrito — ${selectedSize.price} €`
+            : `Añadir al carrito · ${selectedSize.price} €`
           }
         </button>
         <Link

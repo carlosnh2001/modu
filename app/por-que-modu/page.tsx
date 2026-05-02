@@ -106,9 +106,9 @@ export default function PorQueModu() {
           </div>
           <div className="flex flex-col gap-3">
             {[
-              "Fuensanta de Martos — Jaén",
-              "Villa del Río — Córdoba",
-              "Yecla — Murcia",
+              "Fuensanta de Martos, Jaén",
+              "Villa del Río, Córdoba",
+              "Yecla, Murcia",
             ].map((loc) => (
               <div
                 key={loc}
@@ -174,7 +174,7 @@ export default function PorQueModu() {
             </p>
             <p className="text-[#9B9B90] leading-relaxed text-sm">
               Eso nos permite ofrecer más calidad al mismo precio que la
-              competencia —o mejor calidad al mismo coste.
+              competencia, o mejor calidad al mismo coste.
             </p>
           </div>
           <div className="flex flex-col gap-2">

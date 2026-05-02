@@ -50,7 +50,7 @@ export const useCart = create<CartStore>((set, get) => ({
       const item: CartItem = {
         id, model, config, fabric, orientation,
         quantity: 1,
-        displayName: `${model.name} — ${config.name}${orientLabel}`,
+        displayName: `${model.name} · ${config.name}${orientLabel}`,
         price: config.price,
         image: model.images.principal,
       };

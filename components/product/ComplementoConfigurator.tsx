@@ -219,7 +219,7 @@ export default function ComplementoConfigurator({ comp }: { comp: Complemento })
             added ? "bg-[#7DAF96] text-white" : "bg-[#1E1E1C] text-[#F2F1EC] hover:opacity-85"
           }`}
         >
-          {added ? <><Check size={16} /> Añadido al pedido</> : `Añadir al carrito — ${comp.price.toLocaleString("es-ES")} €`}
+          {added ? <><Check size={16} /> Añadido al pedido</> : `Añadir al carrito · ${comp.price.toLocaleString("es-ES")} €`}
         </button>
         <Link
           href="/muestras"

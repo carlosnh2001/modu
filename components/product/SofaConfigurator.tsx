@@ -66,7 +66,7 @@ export default function SofaConfigurator({ model }: { model: SofaModel }) {
         <p className="text-3xl font-semibold text-[#1E1E1C]">
           {selectedConfig.price.toLocaleString("es-ES")} €
         </p>
-        <p className="text-sm text-[#9B9B90]">— {selectedConfig.name}</p>
+        <p className="text-sm text-[#9B9B90]">{selectedConfig.name}</p>
       </div>
 
       <hr className="border-[#CEC8BA]" />
@@ -171,7 +171,7 @@ export default function SofaConfigurator({ model }: { model: SofaModel }) {
               <Image src={selectedConfig.image} alt={selectedConfig.name} fill className="object-contain p-0.5" sizes="56px" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-[#1E1E1C]">{selectedConfig.name} — {selectedConfig.price.toLocaleString("es-ES")} €</p>
+              <p className="text-xs font-semibold text-[#1E1E1C]">{selectedConfig.name} · {selectedConfig.price.toLocaleString("es-ES")} €</p>
               <p className="text-xs text-[#9B9B90]">{selectedConfig.composition}</p>
               {selectedConfig.gift && (
                 <p className="text-[10px] font-semibold text-[#7DAF96] mt-0.5">🎁 {selectedConfig.gift}</p>
@@ -283,7 +283,7 @@ export default function SofaConfigurator({ model }: { model: SofaModel }) {
               {added ? (
                 <><Check size={16} /> Añadido al pedido</>
               ) : (
-                <>Añadir al carrito — {selectedConfig.price.toLocaleString("es-ES")} €</>
+                <>Añadir al carrito · {selectedConfig.price.toLocaleString("es-ES")} €</>
               )}
             </button>
             <Link
@@ -348,7 +348,7 @@ export default function SofaConfigurator({ model }: { model: SofaModel }) {
       <Accordion className="border-t border-[#CEC8BA]">
         <AccordionItem value="dimensiones" className="border-[#CEC8BA]">
           <AccordionTrigger className="text-sm font-medium text-[#1E1E1C] py-4 hover:no-underline">
-            Dimensiones — {selectedConfig.name}
+            Dimensiones · {selectedConfig.name}
           </AccordionTrigger>
           <AccordionContent className="text-sm text-[#9B9B90]">
             <table className="w-full text-left">

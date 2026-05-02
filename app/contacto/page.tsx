@@ -87,7 +87,7 @@ export default function ContactoPage() {
                 </p>
                 <div className="space-y-0.5 text-sm text-[#1E1E1C]">
                   {["Madrid", "Barcelona", "Sevilla", "Valencia"].map((c) => (
-                    <p key={c}>{c} — dirección próximamente</p>
+                    <p key={c}>{c}: dirección próximamente</p>
                   ))}
                 </div>
               </div>

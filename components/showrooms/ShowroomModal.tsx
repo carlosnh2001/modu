@@ -20,7 +20,7 @@ export default function ShowroomModal({
           <X size={20} />
         </button>
         <h3 className="text-xl font-bold text-[#1E1E1C] mb-2">
-          Solicitar visita — {city}
+          Solicitar visita en {city}
         </h3>
         <p className="text-sm text-[#9B9B90] mb-6">
           Escríbenos y concertamos una visita al showroom de {city}.
