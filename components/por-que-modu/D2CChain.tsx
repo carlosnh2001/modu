@@ -19,7 +19,7 @@ const STEPS = [
     sublabel: null,
     active: false,
     highlight: false,
-    delay: 0.3,
+    delay: 0.4,
   },
   {
     key: "tie",
@@ -27,7 +27,7 @@ const STEPS = [
     sublabel: null,
     active: false,
     highlight: false,
-    delay: 0.5,
+    delay: 0.7,
   },
   {
     key: "cli",
@@ -35,7 +35,7 @@ const STEPS = [
     sublabel: "Sin márgenes · Calidad directa",
     active: true,
     highlight: true,
-    delay: 0.85,
+    delay: 1.1,
   },
 ];
 
@@ -59,9 +59,9 @@ export default function D2CChain() {
                   ? "bg-[#1E1E1C]"
                   : "bg-[#CEC8BA]/60 border border-[#CEC8BA]"
               }`}
-              initial={shouldReduce ? false : { opacity: 0, scale: 0.6 }}
+              initial={shouldReduce ? false : { opacity: 0, scale: 0.5 }}
               animate={inView ? { opacity: 1, scale: 1 } : {}}
-              transition={{ delay: step.delay, duration: 0.4, ease: "easeOut" }}
+              transition={{ delay: step.delay, duration: 0.55, ease: "easeOut" }}
             >
               {step.active ? (
                 <Check size={16} className={step.highlight ? "text-white" : "text-[#7DAF96]"} />
@@ -74,12 +74,10 @@ export default function D2CChain() {
             {i < STEPS.length - 1 && (
               <div className="flex-1 w-px bg-[#CEC8BA] my-1 overflow-hidden min-h-[2rem]">
                 <motion.div
-                  className={`w-full h-full ${
-                    step.active && !step.highlight ? "bg-[#1E1E1C]/40" : "bg-[#CEC8BA]"
-                  }`}
+                  className="w-full h-full bg-[#CEC8BA]"
                   initial={shouldReduce ? false : { scaleY: 0, originY: 0 }}
                   animate={inView ? { scaleY: 1 } : {}}
-                  transition={{ delay: step.delay + 0.25, duration: 0.4, ease: "easeOut" }}
+                  transition={{ delay: step.delay + 0.3, duration: 0.5, ease: "easeOut" }}
                 />
               </div>
             )}
@@ -94,9 +92,9 @@ export default function D2CChain() {
                 ? "bg-[#1E1E1C]"
                 : "bg-[#F2F1EC] border border-[#CEC8BA]"
             }`}
-            initial={shouldReduce ? false : { opacity: 0, x: 20 }}
+            initial={shouldReduce ? false : { opacity: 0, x: 24 }}
             animate={inView ? { opacity: 1, x: 0 } : {}}
-            transition={{ delay: step.delay + 0.05, duration: 0.55, ease: "easeOut" }}
+            transition={{ delay: step.delay + 0.08, duration: 0.7, ease: "easeOut" }}
           >
             {/* Label row */}
             <div className="flex items-center justify-between gap-3">
@@ -121,8 +119,8 @@ export default function D2CChain() {
                     initial={{ width: "0%" }}
                     animate={inView ? { width: "100%" } : {}}
                     transition={{
-                      delay: step.delay + 0.3,
-                      duration: 0.45,
+                      delay: step.delay + 0.45,
+                      duration: 0.55,
                       ease: "easeOut",
                     }}
                   />
@@ -135,19 +133,19 @@ export default function D2CChain() {
                   className="text-[10px] font-bold text-white bg-white/20 px-2.5 py-1 rounded-full tracking-wider shrink-0"
                   initial={shouldReduce ? false : { opacity: 0, scale: 0.8 }}
                   animate={inView ? { opacity: 1, scale: 1 } : {}}
-                  transition={{ delay: step.delay + 0.4, duration: 0.35 }}
+                  transition={{ delay: step.delay + 0.5, duration: 0.4 }}
                 >
                   D2C
                 </motion.span>
               )}
 
-              {/* Savings label for fabricante */}
+              {/* Origin badge for fabricante */}
               {step.key === "fab" && (
                 <motion.span
                   className="text-[10px] font-semibold text-[#7DAF96] bg-[#7DAF96]/10 px-2.5 py-1 rounded-full tracking-wider shrink-0"
                   initial={shouldReduce ? false : { opacity: 0 }}
                   animate={inView ? { opacity: 1 } : {}}
-                  transition={{ delay: 0.4, duration: 0.4 }}
+                  transition={{ delay: 0.5, duration: 0.5 }}
                 >
                   Origen
                 </motion.span>
@@ -162,21 +160,9 @@ export default function D2CChain() {
                 }`}
                 initial={shouldReduce ? false : { opacity: 0 }}
                 animate={inView ? { opacity: 1 } : {}}
-                transition={{ delay: step.delay + 0.35, duration: 0.4 }}
+                transition={{ delay: step.delay + 0.45, duration: 0.5 }}
               >
                 {step.sublabel}
-              </motion.p>
-            )}
-
-            {/* Eliminated tag for inactive items */}
-            {!step.active && (
-              <motion.p
-                className="text-[10px] text-[#CEC8BA] mt-1 font-medium"
-                initial={shouldReduce ? false : { opacity: 0 }}
-                animate={inView ? { opacity: 1 } : {}}
-                transition={{ delay: step.delay + 0.5, duration: 0.4 }}
-              >
-                Eliminado
               </motion.p>
             )}
           </motion.div>
@@ -188,7 +174,7 @@ export default function D2CChain() {
         className="absolute -right-2 top-[52px] bottom-[52px] flex flex-col items-center gap-1 pointer-events-none"
         initial={shouldReduce ? false : { opacity: 0 }}
         animate={inView ? { opacity: 1 } : {}}
-        transition={{ delay: 0.9, duration: 0.5 }}
+        transition={{ delay: 1.2, duration: 0.6 }}
       >
         <div className="flex-1 w-px border-l-2 border-dashed border-[#7DAF96]/40" />
         <ArrowDown size={14} className="text-[#7DAF96]/60 shrink-0" />

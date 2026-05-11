@@ -20,11 +20,11 @@ export default function ProductCard({ model }: { model: SofaModel }) {
     >
       <Link href={`/tienda/${model.slug}`} className="block">
         {/* Image container — overflow hidden for zoom effect */}
-        <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-[#CEC8BA]/20 mb-4">
+        <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-[#CEC8BA]/20 mb-6">
           <motion.div
             className="absolute inset-0"
             animate={shouldReduce ? {} : { scale: hovered ? 1.05 : 1 }}
-            transition={{ duration: 0.55, ease: "easeOut" }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
           >
             <Image
               src={hovered ? model.images.secondary : model.images.principal}
@@ -36,12 +36,12 @@ export default function ProductCard({ model }: { model: SofaModel }) {
           </motion.div>
         </div>
 
-        <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start justify-between gap-4 px-1 pb-2">
           <div>
-            <h3 className="font-semibold text-[#1E1E1C] text-lg">{model.name}</h3>
-            <p className="text-sm text-[#9B9B90] mt-0.5">{model.tagline}</p>
+            <h3 className="font-semibold text-[#1E1E1C] text-lg leading-snug">{model.name}</h3>
+            <p className="text-sm text-[#9B9B90] mt-1">{model.tagline}</p>
           </div>
-          <p className="font-semibold text-[#1E1E1C] whitespace-nowrap text-sm mt-0.5">
+          <p className="font-semibold text-[#1E1E1C] whitespace-nowrap text-sm mt-0.5 shrink-0">
             desde {model.priceFrom.toLocaleString("es-ES")} €
           </p>
         </div>

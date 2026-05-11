@@ -174,22 +174,10 @@ export default function PorQueModu() {
               Vendemos directamente. Sin tiendas multimarca, sin márgenes de
               distribuidor. El precio que ves es el precio que pagas.
             </p>
-            <p className="text-[#9B9B90] leading-relaxed text-sm mb-6">
+            <p className="text-[#9B9B90] leading-relaxed text-sm">
               Eso nos permite ofrecer más calidad al mismo precio que la
               competencia, o mejor calidad al mismo coste.
             </p>
-            {/* Savings highlight */}
-            <div className="flex gap-4">
-              {[
-                { value: "2", label: "Intermediarios eliminados" },
-                { value: "~30%", label: "Ahorro vs. tienda física" },
-              ].map((s) => (
-                <div key={s.label} className="p-4 border border-[#CEC8BA] rounded-xl">
-                  <p className="text-2xl font-bold text-[#1E1E1C]">{s.value}</p>
-                  <p className="text-xs text-[#9B9B90] leading-snug mt-0.5">{s.label}</p>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Right: animated D2C chain */}

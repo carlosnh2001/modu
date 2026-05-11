@@ -51,16 +51,16 @@ export default function HowItWorks() {
               className="h-full bg-[#7DAF96]/50"
               initial={shouldReduce ? false : { scaleX: 0, originX: 0 }}
               animate={inView ? { scaleX: 1 } : {}}
-              transition={{ duration: 1.2, delay: 0.3, ease: "easeOut" }}
+              transition={{ duration: 2.0, delay: 0.3, ease: "easeOut" }}
             />
           </div>
 
           {STEPS.map((s, i) => (
             <motion.div
               key={s.num}
-              initial={shouldReduce ? false : { opacity: 0, y: 32 }}
+              initial={shouldReduce ? false : { opacity: 0, y: 36 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.65, delay: 0.2 + i * 0.22, ease: "easeOut" }}
+              transition={{ duration: 0.9, delay: 0.3 + i * 0.35, ease: "easeOut" }}
               className="relative pr-12"
             >
               {/* Step number dot */}
@@ -85,7 +85,7 @@ export default function HowItWorks() {
               className="w-full bg-[#7DAF96]/50"
               initial={shouldReduce ? false : { scaleY: 0, originY: 0 }}
               animate={inView ? { scaleY: 1 } : {}}
-              transition={{ duration: 1.4, delay: 0.3, ease: "easeOut" }}
+              transition={{ duration: 2.2, delay: 0.3, ease: "easeOut" }}
               style={{ height: "100%" }}
             />
           </div>
@@ -93,9 +93,9 @@ export default function HowItWorks() {
           {STEPS.map((s, i) => (
             <motion.div
               key={s.num}
-              initial={shouldReduce ? false : { opacity: 0, x: -20 }}
+              initial={shouldReduce ? false : { opacity: 0, x: -24 }}
               animate={inView ? { opacity: 1, x: 0 } : {}}
-              transition={{ duration: 0.6, delay: 0.2 + i * 0.25, ease: "easeOut" }}
+              transition={{ duration: 0.85, delay: 0.3 + i * 0.35, ease: "easeOut" }}
               className="relative pl-14 pb-10 last:pb-0"
             >
               {/* Step dot */}

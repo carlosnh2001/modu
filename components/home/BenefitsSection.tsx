@@ -34,9 +34,9 @@ export default function BenefitsSection() {
           {BENEFITS.map((b, i) => (
             <motion.div
               key={b.title}
-              initial={shouldReduce ? false : { opacity: 0, y: 28 }}
+              initial={shouldReduce ? false : { opacity: 0, y: 32 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.65, delay: i * 0.18, ease: "easeOut" }}
+              transition={{ duration: 0.9, delay: i * 0.25, ease: "easeOut" }}
               whileHover={shouldReduce ? {} : {
                 y: -6,
                 boxShadow: "0 20px 48px rgba(30,30,28,0.09)",
