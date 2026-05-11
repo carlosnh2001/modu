@@ -19,7 +19,6 @@ type ConfigResult = {
 };
 
 // ─── Fit logic ───────────────────────────────────────────────────────────────
-// Sofa depth is 105 cm. "Ideal" = 60 cm clearance in front. "Tight" = 30 cm.
 
 function calcFit(wallW: number, roomD: number, sofaW: number, sofaD: number): FitResult {
   if (wallW < sofaW) return "no";
@@ -43,7 +42,7 @@ function getResults(wallW: number, roomD: number): ConfigResult[] {
           : calcFit(wallW, roomD, 220, 105) === "tight"
           ? "Cabe, pero el espacio delante será justo (menos de 60 cm)."
           : wallW < 220
-          ? "La pared es más estrecha que el Compact (220 cm)."
+          ? `Tu pared (${wallW} cm) es más estrecha que el Compact (220 cm).`
           : "El salón no tiene suficiente fondo.",
     },
     {
@@ -59,7 +58,7 @@ function getResults(wallW: number, roomD: number): ConfigResult[] {
           : calcFit(wallW, roomD, 310, 105) === "tight"
           ? "Cabe, pero el espacio delante será justo (menos de 60 cm)."
           : wallW < 310
-          ? "La pared es más estrecha que el Urban (310 cm)."
+          ? `Tu pared (${wallW} cm) es más estrecha que el Urban (310 cm).`
           : "El salón no tiene suficiente fondo.",
     },
     {
@@ -75,8 +74,8 @@ function getResults(wallW: number, roomD: number): ConfigResult[] {
           : calcFit(wallW, roomD, 310, 165) === "tight"
           ? "Cabe, pero el espacio delante de la chaise será justo."
           : wallW < 310
-          ? "La pared es más estrecha que el Family (310 cm)."
-          : "Necesitas al menos 225 cm de fondo para la chaise (165 cm sofá + 60 cm paso).",
+          ? `Tu pared (${wallW} cm) es más estrecha que el Family (310 cm).`
+          : "Necesitas al menos 225 cm de fondo total (165 cm sofá + 60 cm paso).",
     },
     {
       id: "family-rincon",
@@ -105,12 +104,13 @@ function getResults(wallW: number, roomD: number): ConfigResult[] {
 
 // ─── Fit UI config ────────────────────────────────────────────────────────────
 
-const FIT_UI: Record<FitResult, { label: string; dotColor: string; cardBg: string; cardBorder: string; icon: React.ReactNode }> = {
+const FIT_UI: Record<FitResult, { label: string; dotColor: string; cardBg: string; cardBorder: string; textColor: string; icon: React.ReactNode }> = {
   ideal: {
     label: "Encaja",
     dotColor: "bg-[#7DAF96]",
     cardBg: "bg-[#7DAF96]/8",
     cardBorder: "border-[#7DAF96]",
+    textColor: "text-[#7DAF96]",
     icon: <Check size={13} />,
   },
   tight: {
@@ -118,6 +118,7 @@ const FIT_UI: Record<FitResult, { label: string; dotColor: string; cardBg: strin
     dotColor: "bg-[#C4A882]",
     cardBg: "bg-[#C4A882]/10",
     cardBorder: "border-[#C4A882]",
+    textColor: "text-[#C4A882]",
     icon: <AlertCircle size={13} />,
   },
   no: {
@@ -125,137 +126,129 @@ const FIT_UI: Record<FitResult, { label: string; dotColor: string; cardBg: strin
     dotColor: "bg-[#CEC8BA]",
     cardBg: "bg-[#F2F1EC]",
     cardBorder: "border-[#CEC8BA]",
+    textColor: "text-[#9B9B90]",
     icon: <Minus size={13} />,
   },
 };
 
-// ─── Room diagram ─────────────────────────────────────────────────────────────
+// ─── Mini room diagram per config ─────────────────────────────────────────────
 
-const SOFAS_META: Record<string, { w: number; d: number; color: string; label: string }> = {
-  compact:      { w: 220, d: 105, color: "#CEC8BA", label: "Compact" },
-  urban:        { w: 310, d: 105, color: "#9B9B90", label: "Urban" },
-  "family-chaise": { w: 310, d: 165, color: "#7DAF96", label: "Family" },
-};
+function MiniRoom({
+  wallW,
+  roomD,
+  sofaW,
+  sofaD,
+  fit,
+  label,
+}: {
+  wallW: number;
+  roomD: number;
+  sofaW: number;
+  sofaD: number;
+  fit: FitResult;
+  label: string;
+}) {
+  const W = 88;
+  const H = 72;
+  const PAD = 6;
 
-function RoomDiagram({ wallW, roomD, results }: { wallW: number; roomD: number; results: ConfigResult[] }) {
-  const SVG_W = 300;
-  const SVG_H = 220;
-  const PAD = 28; // space for dimension labels
+  const drawW = W - PAD * 2;
+  const drawH = H - PAD * 2;
 
-  const drawW = SVG_W - PAD * 2;
-  const drawH = SVG_H - PAD * 2;
+  // Scale to fit the larger dimension
+  const maxDim = Math.max(wallW, roomD, 300);
+  const scale = Math.min(drawW / maxDim, drawH / maxDim);
 
-  // Scale: fit the room into the draw area
-  const maxDim = Math.max(wallW, roomD, 400);
-  const scaleX = drawW / maxDim;
-  const scaleY = drawH / maxDim;
-  const scale = Math.min(scaleX, scaleY);
-
-  const rW = wallW * scale;
-  const rH = roomD * scale;
+  const rW = Math.min(wallW * scale, drawW);
+  const rH = Math.min(roomD * scale, drawH);
   const ox = PAD + (drawW - rW) / 2;
   const oy = PAD + (drawH - rH) / 2;
 
-  // Sofas to draw (only non-rincon ones fit neatly as rects)
-  const sofasToDraw = ["compact", "urban", "family-chaise"].map((id) => {
-    const meta = SOFAS_META[id];
-    const result = results.find((r) => r.id === id)!;
-    return { ...meta, fit: result.fit };
-  });
+  // Sofa footprint
+  const sw = Math.min(sofaW * scale, rW);
+  const sd = Math.min(sofaD * scale, rH);
 
-  // Walking clearance line (60 cm from sofas)
-  const clearance = 60 * scale;
+  // Clearance line (60 cm in scale)
+  const clearY = oy + sd + 60 * scale;
+
+  const sofaColor =
+    fit === "ideal" ? "#7DAF96" : fit === "tight" ? "#C4A882" : "#CEC8BA";
+  const sofaOpacity = fit === "no" ? 0.3 : 0.7;
+
+  const borderColor =
+    fit === "ideal" ? "#7DAF96" : fit === "tight" ? "#C4A882" : "#CEC8BA";
 
   return (
-    <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} className="w-full h-auto select-none">
-      {/* ── Room rectangle ── */}
-      <rect x={ox} y={oy} width={rW} height={rH} fill="#F8F7F3" stroke="#CEC8BA" strokeWidth="1.5" rx="3" />
+    <div className="flex flex-col items-center gap-1.5">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto">
+        {/* Room */}
+        <rect x={ox} y={oy} width={rW} height={rH} fill="#F8F7F3" stroke={borderColor} strokeWidth="1.2" rx="2" />
+        {/* Sofa */}
+        {sw > 0 && sd > 0 && (
+          <rect
+            x={ox + (rW - sw) / 2}
+            y={oy}
+            width={sw}
+            height={sd}
+            fill={sofaColor}
+            opacity={sofaOpacity}
+            rx="1.5"
+          />
+        )}
+        {/* Clearance line */}
+        {fit !== "no" && clearY < oy + rH && (
+          <line
+            x1={ox + 2}
+            x2={ox + rW - 2}
+            y1={clearY}
+            y2={clearY}
+            stroke="#7DAF96"
+            strokeWidth="0.8"
+            strokeDasharray="3 2"
+            opacity={0.6}
+          />
+        )}
+      </svg>
+      <p className="text-[10px] font-semibold text-[#9B9B90] text-center leading-tight">{label}</p>
+    </div>
+  );
+}
 
-      {/* ── Sofas (stacked from back wall, shown if they fit width) ── */}
-      {sofasToDraw.map((s) => {
-        const sw = s.w * scale;
-        const sd = s.d * scale;
-        if (sw > rW) return null; // doesn't fit width
-        const alpha = s.fit === "ideal" ? 0.85 : s.fit === "tight" ? 0.5 : 0.18;
-        const textColor = s.fit === "no" ? "#CEC8BA" : "#fff";
-        return (
-          <g key={s.label}>
-            <rect
-              x={ox + (rW - sw) / 2}
-              y={oy + 2}
-              width={sw}
-              height={Math.min(sd, rH - 4)}
-              fill={s.color}
-              rx="3"
-              opacity={alpha}
-            />
-            {s.fit !== "no" && sd < rH - 4 && (
-              <text
-                x={ox + rW / 2}
-                y={oy + sd / 2 + 5}
-                textAnchor="middle"
-                fontSize="9"
-                fontWeight="600"
-                fill={textColor}
-                opacity={alpha}
-              >
-                {s.label}
-              </text>
-            )}
-          </g>
-        );
-      })}
+// ─── Room diagrams panel (3 mini rooms) ──────────────────────────────────────
 
-      {/* ── Clearance line (60 cm) ── */}
-      {results.some((r) => r.fit !== "no") && clearance < rH && (
-        <line
-          x1={ox + 4}
-          x2={ox + rW - 4}
-          y1={oy + 105 * scale + clearance}
-          y2={oy + 105 * scale + clearance}
-          stroke="#7DAF96"
-          strokeWidth="1"
-          strokeDasharray="4 3"
-          opacity={0.5}
-        />
-      )}
+function RoomDiagrams({ wallW, roomD, results }: { wallW: number; roomD: number; results: ConfigResult[] }) {
+  // Show compact, urban, family-chaise (3 key ones — rincón is a corner layout, harder to diagram as rect)
+  const toShow = results.filter((r) => r.id !== "family-rincon");
 
-      {/* ── Dimension labels ── */}
-      {/* Width */}
-      <line x1={ox} x2={ox + rW} y1={oy + rH + 10} y2={oy + rH + 10} stroke="#9B9B90" strokeWidth="0.8" />
-      <line x1={ox} x2={ox} y1={oy + rH + 6} y2={oy + rH + 14} stroke="#9B9B90" strokeWidth="0.8" />
-      <line x1={ox + rW} x2={ox + rW} y1={oy + rH + 6} y2={oy + rH + 14} stroke="#9B9B90" strokeWidth="0.8" />
-      <text x={ox + rW / 2} y={oy + rH + 22} textAnchor="middle" fontSize="9" fill="#9B9B90">
-        {wallW} cm
-      </text>
-
-      {/* Depth */}
-      <line x1={ox - 10} x2={ox - 10} y1={oy} y2={oy + rH} stroke="#9B9B90" strokeWidth="0.8" />
-      <line x1={ox - 14} x2={ox - 6} y1={oy} y2={oy} stroke="#9B9B90" strokeWidth="0.8" />
-      <line x1={ox - 14} x2={ox - 6} y1={oy + rH} y2={oy + rH} stroke="#9B9B90" strokeWidth="0.8" />
-      <text
-        x={ox - 18}
-        y={oy + rH / 2}
-        textAnchor="middle"
-        fontSize="9"
-        fill="#9B9B90"
-        transform={`rotate(-90, ${ox - 18}, ${oy + rH / 2})`}
-      >
-        {roomD} cm
-      </text>
-
-      {/* ── Legend ── */}
-      {[
-        { color: "#CEC8BA", label: "Compact" },
-        { color: "#9B9B90", label: "Urban" },
-        { color: "#7DAF96", label: "Family" },
-      ].map((l, i) => (
-        <g key={l.label} transform={`translate(${ox + i * 70}, ${SVG_H - 10})`}>
-          <rect x={0} y={-7} width={10} height={8} fill={l.color} rx="1.5" opacity={0.7} />
-          <text x={13} y={0} fontSize="8" fill="#9B9B90">{l.label}</text>
-        </g>
-      ))}
-    </svg>
+  return (
+    <div className="bg-white rounded-2xl border border-[#CEC8BA] p-4">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-[#9B9B90] mb-4 px-1">
+        Vista de planta · escala aproximada
+      </p>
+      <div className="grid grid-cols-3 gap-3">
+        {toShow.map((r) => (
+          <MiniRoom
+            key={r.id}
+            wallW={wallW}
+            roomD={roomD}
+            sofaW={r.sofaW}
+            sofaD={r.sofaD}
+            fit={r.fit}
+            label={r.name}
+          />
+        ))}
+      </div>
+      {/* Dim labels below */}
+      <div className="flex items-center justify-between mt-3 px-1">
+        <p className="text-[10px] text-[#9B9B90]">
+          Sala: <span className="font-medium text-[#1E1E1C]">{wallW} × {roomD} cm</span>
+        </p>
+        <div className="flex items-center gap-1">
+          <div className="w-4 border-t border-dashed border-[#7DAF96]" />
+          <p className="text-[10px] text-[#9B9B90]">60 cm paso</p>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -279,12 +272,12 @@ function DimSlider({
   const pct = ((value - min) / (max - min)) * 100;
   return (
     <div className="space-y-2">
-      <div className="flex items-baseline justify-between">
-        <div>
-          <p className="text-xs font-semibold text-[#1E1E1C] uppercase tracking-wider">{label}</p>
-          <p className="text-[10px] text-[#9B9B90] mt-0.5">{sublabel}</p>
+      <div className="flex items-baseline justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold text-[#1E1E1C] uppercase tracking-wider truncate">{label}</p>
+          <p className="text-[10px] text-[#9B9B90] mt-0.5 truncate">{sublabel}</p>
         </div>
-        <div className="flex items-baseline gap-1">
+        <div className="flex items-baseline gap-1 shrink-0">
           <span className="text-2xl font-bold text-[#1E1E1C] tabular-nums">{value}</span>
           <span className="text-xs text-[#9B9B90]">cm</span>
         </div>
@@ -303,13 +296,11 @@ function DimSlider({
           onChange={(e) => onChange(Number(e.target.value))}
           className="absolute inset-0 w-full opacity-0 cursor-pointer h-full"
         />
-        {/* Thumb */}
         <div
           className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#1E1E1C] border-2 border-[#F2F1EC] shadow pointer-events-none transition-all duration-75"
           style={{ left: `calc(${pct}% - 8px)` }}
         />
       </div>
-      {/* Min/max hints */}
       <div className="flex justify-between text-[10px] text-[#CEC8BA]">
         <span>{min} cm</span>
         <span>{max} cm</span>
@@ -330,19 +321,20 @@ export default function CalculadoraPage() {
 
   return (
     <div className="min-h-screen pt-24 pb-16 bg-[#F2F1EC]">
-      <div className="modu-container">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6">
         {/* ── Header ── */}
-        <div className="mb-8">
+        <div className="mb-6">
           <p className="text-xs font-semibold tracking-widest uppercase text-[#9B9B90] mb-1">Calculadora</p>
           <h1 className="text-3xl md:text-4xl font-bold text-[#1E1E1C]">¿Cabe en tu salón?</h1>
         </div>
 
         {/* ── Main grid ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-5 items-start">
 
-          {/* Left: sliders + diagram */}
-          <div className="space-y-5">
-            <div className="bg-white rounded-2xl border border-[#CEC8BA] p-6 space-y-6">
+          {/* Left: sliders + mini diagrams */}
+          <div className="space-y-4">
+            {/* Sliders */}
+            <div className="bg-white rounded-2xl border border-[#CEC8BA] p-5 space-y-5">
               <DimSlider
                 label="Ancho de la pared"
                 sublabel="Donde apoyará el respaldo"
@@ -358,16 +350,8 @@ export default function CalculadoraPage() {
               />
             </div>
 
-            {/* Diagram */}
-            <div className="bg-white rounded-2xl border border-[#CEC8BA] p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#9B9B90] mb-3 px-1">
-                Vista de planta · escala aproximada
-              </p>
-              <RoomDiagram wallW={wallW} roomD={roomD} results={results} />
-              <p className="text-[10px] text-[#9B9B90] mt-2 px-1">
-                --- línea verde = 60 cm de paso mínimo delante del sofá
-              </p>
-            </div>
+            {/* Mini room diagrams */}
+            <RoomDiagrams wallW={wallW} roomD={roomD} results={results} />
           </div>
 
           {/* Right: results */}
@@ -401,16 +385,13 @@ export default function CalculadoraPage() {
                       <p className="font-semibold text-[#1E1E1C] text-sm">{r.name}</p>
                       <p className="text-xs text-[#9B9B90]">{r.price}</p>
                     </div>
-                    <div className={`flex items-center gap-1 text-xs font-semibold shrink-0 ${
-                      r.fit === "ideal" ? "text-[#7DAF96]" : r.fit === "tight" ? "text-[#C4A882]" : "text-[#9B9B90]"
-                    }`}>
+                    <div className={`flex items-center gap-1 text-xs font-semibold shrink-0 ${ui.textColor}`}>
                       {ui.icon}
                       {ui.label}
                     </div>
                   </div>
                   <p className="text-xs text-[#9B9B90] leading-relaxed">{r.note}</p>
-                  {/* Dimension chips */}
-                  <div className="flex items-center gap-2 mt-2.5">
+                  <div className="flex items-center gap-2 mt-2.5 flex-wrap">
                     <span className="text-[10px] font-medium bg-[#1E1E1C]/6 text-[#1E1E1C] px-2 py-0.5 rounded-full">
                       {r.sofaW} cm ancho
                     </span>
@@ -431,7 +412,7 @@ export default function CalculadoraPage() {
             })}
 
             {/* Legend */}
-            <div className="flex items-center gap-4 px-1 pt-1">
+            <div className="flex items-center gap-5 px-1 pt-1">
               {(["ideal", "tight", "no"] as FitResult[]).map((f) => (
                 <div key={f} className="flex items-center gap-1.5">
                   <div className={`w-2 h-2 rounded-full ${FIT_UI[f].dotColor}`} />
@@ -441,7 +422,7 @@ export default function CalculadoraPage() {
             </div>
 
             {/* Bottom CTAs */}
-            <div className="flex flex-col sm:flex-row gap-2 pt-2">
+            <div className="flex flex-col sm:flex-row gap-2 pt-1">
               <Link
                 href="/comparar"
                 className="flex-1 text-center py-2.5 rounded-lg border border-[#CEC8BA] text-xs font-semibold text-[#1E1E1C] hover:border-[#1E1E1C] transition-colors"
