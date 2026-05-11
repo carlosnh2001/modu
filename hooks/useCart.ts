@@ -4,6 +4,7 @@ import { create } from "zustand";
 import type { SofaModel, Complemento, Configuration, Fabric } from "@/data/products";
 
 export type Orientation = "izquierda" | "derecha";
+export type FamilyModule = "chaise" | "rincon";
 
 export type CartItem = {
   id: string;
@@ -16,6 +17,7 @@ export type CartItem = {
   price: number;
   image: string;
   orientation?: Orientation;
+  familyModule?: FamilyModule;
   cojinSize?: string;
 };
 
@@ -23,7 +25,7 @@ type CartStore = {
   items: CartItem[];
   isOpen: boolean;
   includesRemoval: boolean;
-  addSofa: (model: SofaModel, config: Configuration, fabric: Fabric, orientation?: Orientation) => void;
+  addSofa: (model: SofaModel, config: Configuration, fabric: Fabric, orientation?: Orientation, familyModule?: FamilyModule) => void;
   addComplemento: (comp: Complemento, fabric: Fabric, orientation?: Orientation, cojinSize?: string, cojinPrice?: number) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
@@ -40,17 +42,18 @@ export const useCart = create<CartStore>((set, get) => ({
   isOpen: false,
   includesRemoval: false,
 
-  addSofa: (model, config, fabric, orientation) => {
-    const id = `${model.id}-${config.id}-${fabric.id}${orientation ? `-${orientation}` : ""}`;
+  addSofa: (model, config, fabric, orientation, familyModule) => {
+    const id = `${model.id}-${config.id}-${fabric.id}${orientation ? `-${orientation}` : ""}${familyModule ? `-${familyModule}` : ""}`;
     const existing = get().items.find((i) => i.id === id);
     if (existing) {
       set((s) => ({ items: s.items.map((i) => i.id === id ? { ...i, quantity: i.quantity + 1 } : i) }));
     } else {
+      const moduleLabel = familyModule === "chaise" ? " · Chaise Longue" : familyModule === "rincon" ? " · Módulo Rincón" : "";
       const orientLabel = orientation ? ` · V/F ${orientation.charAt(0).toUpperCase() + orientation.slice(1)}` : "";
       const item: CartItem = {
-        id, model, config, fabric, orientation,
+        id, model, config, fabric, orientation, familyModule,
         quantity: 1,
-        displayName: `${model.name} · ${config.name}${orientLabel}`,
+        displayName: `${model.name} · ${config.name}${moduleLabel}${orientLabel}`,
         price: config.price,
         image: model.images.principal,
       };

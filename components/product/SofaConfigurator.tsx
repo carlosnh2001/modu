@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Check, ChevronRight, ZoomIn, X, ArrowLeftRight } from "lucide-react";
-import type { Orientation } from "@/hooks/useCart";
+import { Check, ChevronRight, ZoomIn, X, ArrowLeftRight, Sofa } from "lucide-react";
+import type { Orientation, FamilyModule } from "@/hooks/useCart";
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
@@ -22,6 +22,11 @@ const FAMILY_KEYS: { key: FamilyKey; label: string }[] = [
   { key: "algodon", label: "Algodón" },
 ];
 
+const FAMILY_MODULES: { id: FamilyModule; label: string; desc: string }[] = [
+  { id: "chaise", label: "Chaise longue", desc: "Reposapiés alargado en un extremo" },
+  { id: "rincon", label: "Módulo rincón", desc: "Configura el sofá en L" },
+];
+
 export default function SofaConfigurator({ model }: { model: SofaModel }) {
   const [step, setStep] = useState<Step>(1);
   const [selectedConfig, setSelectedConfig] = useState<Configuration>(model.configurations[0]);
@@ -29,7 +34,9 @@ export default function SofaConfigurator({ model }: { model: SofaModel }) {
   const [fabric, setFabric] = useState<Fabric>(allFabrics[0]);
   const [added, setAdded] = useState(false);
   const [zoomedFabric, setZoomedFabric] = useState<Fabric | null>(null);
+  const [zoomedConfigImg, setZoomedConfigImg] = useState<string | null>(null);
   const [orientation, setOrientation] = useState<Orientation>("izquierda");
+  const [familyModule, setFamilyModule] = useState<FamilyModule>("chaise");
   const { addSofa } = useCart();
 
   const needsOrientation = selectedConfig.id === "family";
@@ -37,7 +44,13 @@ export default function SofaConfigurator({ model }: { model: SofaModel }) {
   const familyFabrics = allFabrics.filter((f) => f.family === fabricFamilies[familyKey].name);
 
   const handleAddToCart = () => {
-    addSofa(model, selectedConfig, fabric, needsOrientation ? orientation : undefined);
+    addSofa(
+      model,
+      selectedConfig,
+      fabric,
+      needsOrientation ? orientation : undefined,
+      needsOrientation ? familyModule : undefined,
+    );
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
@@ -117,9 +130,15 @@ export default function SofaConfigurator({ model }: { model: SofaModel }) {
                     : "border-[#CEC8BA] hover:border-[#9B9B90]"
                 }`}
               >
-                {/* Format diagram */}
-                <div className="relative w-20 h-14 shrink-0 rounded-lg overflow-hidden bg-[#CEC8BA]/20">
+                {/* Format diagram — clickable for zoom, inside the button via stopPropagation */}
+                <div
+                  className="relative w-20 h-14 shrink-0 rounded-lg overflow-hidden bg-[#CEC8BA]/20 group cursor-zoom-in"
+                  onClick={(e) => { e.stopPropagation(); setZoomedConfigImg(cfg.image); }}
+                >
                   <Image src={cfg.image} alt={cfg.name} fill className="object-contain p-1" sizes="80px" />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10 rounded-lg">
+                    <ZoomIn size={14} className="text-[#1E1E1C]" />
+                  </div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
@@ -142,6 +161,14 @@ export default function SofaConfigurator({ model }: { model: SofaModel }) {
               </button>
             ))}
           </div>
+
+          {/* Compare link */}
+          <p className="text-xs text-center text-[#9B9B90]">
+            ¿No sabes cuál elegir?{" "}
+            <Link href="/comparar" className="underline underline-offset-2 hover:text-[#1E1E1C] transition-colors">
+              Compara los formatos →
+            </Link>
+          </p>
 
           <button
             onClick={() => setStep(2)}
@@ -167,9 +194,15 @@ export default function SofaConfigurator({ model }: { model: SofaModel }) {
 
           {/* Resumen config seleccionada */}
           <div className="flex items-center gap-3 p-3 bg-[#CEC8BA]/20 rounded-lg border border-[#CEC8BA]">
-            <div className="relative w-14 h-10 rounded overflow-hidden bg-[#CEC8BA]/30 shrink-0">
+            <button
+              className="relative w-14 h-10 rounded overflow-hidden bg-[#CEC8BA]/30 shrink-0 group cursor-zoom-in"
+              onClick={() => setZoomedConfigImg(selectedConfig.image)}
+            >
               <Image src={selectedConfig.image} alt={selectedConfig.name} fill className="object-contain p-0.5" sizes="56px" />
-            </div>
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10">
+                <ZoomIn size={12} className="text-[#1E1E1C]" />
+              </div>
+            </button>
             <div>
               <p className="text-xs font-semibold text-[#1E1E1C]">{selectedConfig.name} · {selectedConfig.price.toLocaleString("es-ES")} €</p>
               <p className="text-xs text-[#9B9B90]">{selectedConfig.composition}</p>
@@ -178,6 +211,38 @@ export default function SofaConfigurator({ model }: { model: SofaModel }) {
               )}
             </div>
           </div>
+
+          {/* ── FAMILY: module type selector ── */}
+          {needsOrientation && (
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center gap-2">
+                <Sofa size={14} className="text-[#9B9B90]" />
+                <p className="text-xs font-semibold text-[#9B9B90] uppercase tracking-wider">Tipo de módulo</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {FAMILY_MODULES.map((mod) => (
+                  <button
+                    key={mod.id}
+                    onClick={() => setFamilyModule(mod.id)}
+                    className={`flex flex-col items-start p-3 rounded-xl border-2 text-left transition-all ${
+                      familyModule === mod.id
+                        ? "border-[#1E1E1C] bg-[#1E1E1C]/3"
+                        : "border-[#CEC8BA] hover:border-[#9B9B90]"
+                    }`}
+                  >
+                    <span className="text-sm font-semibold text-[#1E1E1C] leading-tight">{mod.label}</span>
+                    <span className="text-xs text-[#9B9B90] mt-1 leading-snug">{mod.desc}</span>
+                  </button>
+                ))}
+              </div>
+              {familyModule === "rincon" && (
+                <p className="text-xs text-[#7DAF96] font-medium flex items-center gap-1.5">
+                  <Check size={12} />
+                  Incluye módulo de una plaza con brazo
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Family tabs */}
           <div className="flex gap-2">
@@ -244,7 +309,7 @@ export default function SofaConfigurator({ model }: { model: SofaModel }) {
             ))}
           </div>
 
-          {/* Orientation selector — only for Family */}
+          {/* ── FAMILY: orientation selector ── */}
           {needsOrientation && (
             <div className="space-y-2 pt-1">
               <div className="flex items-center gap-2">
@@ -267,7 +332,9 @@ export default function SofaConfigurator({ model }: { model: SofaModel }) {
                 ))}
               </div>
               <p className="text-xs text-[#9B9B90]">
-                Indica si la chaise longue queda a tu izquierda o derecha cuando miras el sofá de frente.
+                {familyModule === "rincon"
+                  ? "Indica si el módulo rincón queda a tu izquierda o derecha cuando miras el sofá de frente."
+                  : "Indica si la chaise longue queda a tu izquierda o derecha cuando miras el sofá de frente."}
               </p>
             </div>
           )}
@@ -310,7 +377,7 @@ export default function SofaConfigurator({ model }: { model: SofaModel }) {
         <strong className="text-[#1E1E1C]">Fabricado bajo pedido.</strong> El plazo de entrega estimado es de 25-30 días desde la confirmación del pedido.
       </div>
 
-      {/* Fabric zoom lightbox */}
+      {/* ── Fabric zoom lightbox ── */}
       {zoomedFabric && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/70 backdrop-blur-sm"
@@ -337,6 +404,36 @@ export default function SofaConfigurator({ model }: { model: SofaModel }) {
             <button
               onClick={() => setZoomedFabric(null)}
               className="absolute top-4 right-4 bg-white/90 hover:bg-white rounded-full p-2 transition-colors"
+            >
+              <X size={18} className="text-[#1E1E1C]" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Config image zoom lightbox ── */}
+      {zoomedConfigImg && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-8 bg-black/70 backdrop-blur-sm"
+          onClick={() => setZoomedConfigImg(null)}
+        >
+          <div
+            className="relative bg-[#F2F1EC] rounded-2xl overflow-hidden shadow-2xl p-8 max-w-lg w-full flex flex-col items-center gap-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative w-full aspect-[4/3]">
+              <Image
+                src={zoomedConfigImg}
+                alt="Formato de configuración"
+                fill
+                quality={100}
+                className="object-contain"
+                sizes="(max-width: 768px) 100vw, 512px"
+              />
+            </div>
+            <button
+              onClick={() => setZoomedConfigImg(null)}
+              className="absolute top-4 right-4 bg-[#1E1E1C]/10 hover:bg-[#1E1E1C]/20 rounded-full p-2 transition-colors"
             >
               <X size={18} className="text-[#1E1E1C]" />
             </button>

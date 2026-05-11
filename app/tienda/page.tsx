@@ -111,6 +111,30 @@ export default function TiendaPage() {
           </p>
         </div>
 
+        {/* Tools strip */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-10">
+          <Link
+            href="/comparar"
+            className="flex items-center justify-between p-5 rounded-xl border border-[#CEC8BA] hover:border-[#1E1E1C] transition-colors group"
+          >
+            <div>
+              <p className="text-xs font-semibold text-[#9B9B90] uppercase tracking-wider mb-0.5">Comparador</p>
+              <p className="text-sm font-semibold text-[#1E1E1C]">Compara los tres formatos →</p>
+            </div>
+            <span className="text-[#CEC8BA] group-hover:text-[#1E1E1C] transition-colors text-xl">⇄</span>
+          </Link>
+          <Link
+            href="/calculadora"
+            className="flex items-center justify-between p-5 rounded-xl border border-[#CEC8BA] hover:border-[#1E1E1C] transition-colors group"
+          >
+            <div>
+              <p className="text-xs font-semibold text-[#9B9B90] uppercase tracking-wider mb-0.5">Calculadora</p>
+              <p className="text-sm font-semibold text-[#1E1E1C]">¿Cabe en tu salón? →</p>
+            </div>
+            <span className="text-[#CEC8BA] group-hover:text-[#1E1E1C] transition-colors text-xl">⬚</span>
+          </Link>
+        </div>
+
         {/* Complementos */}
         <div className="mt-20 pt-16 border-t border-[#CEC8BA]">
           <div className="mb-10">
