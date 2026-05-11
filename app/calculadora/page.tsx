@@ -1,392 +1,460 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Check, X, AlertCircle, ArrowRight } from "lucide-react";
+import { Check, Minus, AlertCircle } from "lucide-react";
 
-// ─── Dimensions (cm) ─────────────────────────────────────────────────────────
-// Sofá depth (from back wall): 105 cm
-// Minimum clearance in front: 60 cm
-// So minimum room depth: 105 + 60 = 165 cm
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 type FitResult = "ideal" | "tight" | "no";
 
 type ConfigResult = {
-  name: string;
   id: string;
+  name: string;
   price: string;
-  sofaWidth: number;
-  sofaDepth: number | null; // null = variable
+  sofaW: number;
+  sofaD: number;
   fit: FitResult;
-  note?: string;
+  note: string;
 };
 
-function getResults(wallWidth: number, roomDepth: number): ConfigResult[] {
-  // Helper
-  const fits = (sw: number, sd: number): FitResult => {
-    const widthOk = wallWidth >= sw;
-    const depthOk = roomDepth >= sd + 60; // 60 cm minimum clearance
-    const depthTight = roomDepth >= sd + 30; // 30 cm tight but usable
-    if (!widthOk) return "no";
-    if (!depthTight) return "no";
-    if (!depthOk) return "tight";
-    return "ideal";
-  };
+// ─── Fit logic ───────────────────────────────────────────────────────────────
+// Sofa depth is 105 cm. "Ideal" = 60 cm clearance in front. "Tight" = 30 cm.
 
+function calcFit(wallW: number, roomD: number, sofaW: number, sofaD: number): FitResult {
+  if (wallW < sofaW) return "no";
+  if (roomD < sofaD + 30) return "no";
+  if (roomD < sofaD + 60) return "tight";
+  return "ideal";
+}
+
+function getResults(wallW: number, roomD: number): ConfigResult[] {
   return [
     {
-      name: "Compact",
       id: "compact",
-      price: "desde 725 €",
-      sofaWidth: 220,
-      sofaDepth: 105,
-      fit: fits(220, 105),
+      name: "Compact",
+      price: "725 €",
+      sofaW: 220,
+      sofaD: 105,
+      fit: calcFit(wallW, roomD, 220, 105),
       note:
-        fits(220, 105) === "tight"
-          ? "Cabe, pero con muy poco espacio para caminar delante."
-          : fits(220, 105) === "ideal"
-          ? "Encaja perfectamente. Tienes espacio de sobra para moverte."
-          : "La pared es demasiado estrecha o el salón tiene muy poco fondo.",
+        calcFit(wallW, roomD, 220, 105) === "ideal"
+          ? "Encaja perfectamente, con espacio cómodo para circular."
+          : calcFit(wallW, roomD, 220, 105) === "tight"
+          ? "Cabe, pero el espacio delante será justo (menos de 60 cm)."
+          : wallW < 220
+          ? "La pared es más estrecha que el Compact (220 cm)."
+          : "El salón no tiene suficiente fondo.",
     },
     {
-      name: "Urban",
       id: "urban",
-      price: "desde 1.150 €",
-      sofaWidth: 310,
-      sofaDepth: 105,
-      fit: fits(310, 105),
+      name: "Urban",
+      price: "1.150 €",
+      sofaW: 310,
+      sofaD: 105,
+      fit: calcFit(wallW, roomD, 310, 105),
       note:
-        fits(310, 105) === "tight"
-          ? "Cabe, pero con muy poco espacio para caminar delante."
-          : fits(310, 105) === "ideal"
-          ? "Encaja perfectamente. Tienes espacio de sobra para moverte."
-          : wallWidth < 310
-          ? "La pared no tiene suficiente anchura para el Urban (310 cm)."
-          : "El salón no tiene suficiente fondo para colocar el Urban cómodamente.",
+        calcFit(wallW, roomD, 310, 105) === "ideal"
+          ? "Encaja perfectamente, con espacio cómodo para circular."
+          : calcFit(wallW, roomD, 310, 105) === "tight"
+          ? "Cabe, pero el espacio delante será justo (menos de 60 cm)."
+          : wallW < 310
+          ? "La pared es más estrecha que el Urban (310 cm)."
+          : "El salón no tiene suficiente fondo.",
     },
     {
-      name: "Family · Chaise longue",
-      id: "family",
-      price: "desde 1.600 €",
-      sofaWidth: 310,
-      sofaDepth: 165,
-      fit: fits(310, 165),
+      id: "family-chaise",
+      name: "Family · Chaise",
+      price: "1.600 €",
+      sofaW: 310,
+      sofaD: 165,
+      fit: calcFit(wallW, roomD, 310, 165),
       note:
-        fits(310, 165) === "tight"
-          ? "Cabe, pero el espacio delante de la chaise será reducido."
-          : fits(310, 165) === "ideal"
-          ? "Encaja perfectamente. Espacio ideal para la chaise longue."
-          : wallWidth < 310
-          ? "La pared no tiene suficiente anchura para el Family (310 cm)."
-          : "El fondo del salón no es suficiente para la chaise longue (necesitas al menos 225 cm de fondo total).",
+        calcFit(wallW, roomD, 310, 165) === "ideal"
+          ? "Encaja con espacio cómodo para la chaise longue."
+          : calcFit(wallW, roomD, 310, 165) === "tight"
+          ? "Cabe, pero el espacio delante de la chaise será justo."
+          : wallW < 310
+          ? "La pared es más estrecha que el Family (310 cm)."
+          : "Necesitas al menos 225 cm de fondo para la chaise (165 cm sofá + 60 cm paso).",
     },
     {
-      name: "Family · Módulo rincón",
       id: "family-rincon",
-      price: "desde 1.600 €",
-      sofaWidth: 310,
-      sofaDepth: 310,
-      fit: ((): FitResult => {
-        // Rincón needs roughly a square area of 310×310
-        const minSide = Math.min(wallWidth, roomDepth);
-        const maxSide = Math.max(wallWidth, roomDepth);
-        if (maxSide >= 310 && minSide >= 370) return "ideal"; // 310 + 60 clearance
-        if (maxSide >= 310 && minSide >= 340) return "tight";
-        return "no";
+      name: "Family · Rincón",
+      price: "1.600 €",
+      sofaW: 310,
+      sofaD: 310,
+      fit: (() => {
+        const min = Math.min(wallW, roomD);
+        const max = Math.max(wallW, roomD);
+        if (max < 310) return "no";
+        if (min < 340) return "no";
+        if (min < 370) return "tight";
+        return "ideal";
       })(),
       note: (() => {
-        const minSide = Math.min(wallWidth, roomDepth);
-        const maxSide = Math.max(wallWidth, roomDepth);
-        if (maxSide >= 310 && minSide >= 370) return "El espacio en L encaja bien. Gran salón.";
-        if (maxSide >= 310 && minSide >= 340) return "Cabe, pero el espacio alrededor será justo.";
-        return "El módulo rincón necesita un salón grande (al menos 310 × 370 cm). Considera el Compact o el Urban.";
+        const min = Math.min(wallW, roomD);
+        const max = Math.max(wallW, roomD);
+        if (max >= 310 && min >= 370) return "El salón tiene espacio suficiente para el sofá en L.";
+        if (max >= 310 && min >= 340) return "Cabe, pero el espacio alrededor del rincón será justo.";
+        return "Necesitas un salón de al menos 310 × 370 cm para el módulo rincón.";
       })(),
     },
   ];
 }
 
-const FIT_LABELS: Record<FitResult, { label: string; color: string; icon: React.ReactNode }> = {
+// ─── Fit UI config ────────────────────────────────────────────────────────────
+
+const FIT_UI: Record<FitResult, { label: string; dotColor: string; cardBg: string; cardBorder: string; icon: React.ReactNode }> = {
   ideal: {
-    label: "Encaja perfectamente",
-    color: "text-[#7DAF96]",
-    icon: <Check size={16} />,
+    label: "Encaja",
+    dotColor: "bg-[#7DAF96]",
+    cardBg: "bg-[#7DAF96]/8",
+    cardBorder: "border-[#7DAF96]",
+    icon: <Check size={13} />,
   },
   tight: {
-    label: "Cabe justo",
-    color: "text-[#C4A882]",
-    icon: <AlertCircle size={16} />,
+    label: "Justo",
+    dotColor: "bg-[#C4A882]",
+    cardBg: "bg-[#C4A882]/10",
+    cardBorder: "border-[#C4A882]",
+    icon: <AlertCircle size={13} />,
   },
   no: {
     label: "No encaja",
-    color: "text-[#9B9B90]",
-    icon: <X size={16} />,
+    dotColor: "bg-[#CEC8BA]",
+    cardBg: "bg-[#F2F1EC]",
+    cardBorder: "border-[#CEC8BA]",
+    icon: <Minus size={13} />,
   },
 };
 
-// ─── Room diagram SVG ─────────────────────────────────────────────────────────
+// ─── Room diagram ─────────────────────────────────────────────────────────────
 
-function RoomDiagram({
-  wallWidth,
-  roomDepth,
-}: {
-  wallWidth: number;
-  roomDepth: number;
-}) {
-  const W = 280;
-  const H = 180;
+const SOFAS_META: Record<string, { w: number; d: number; color: string; label: string }> = {
+  compact:      { w: 220, d: 105, color: "#CEC8BA", label: "Compact" },
+  urban:        { w: 310, d: 105, color: "#9B9B90", label: "Urban" },
+  "family-chaise": { w: 310, d: 165, color: "#7DAF96", label: "Family" },
+};
 
-  // Scale factors
-  const scaleX = W / Math.max(wallWidth, 400);
-  const scaleY = H / Math.max(roomDepth, 400);
-  const scale = Math.min(scaleX, scaleY, 1);
+function RoomDiagram({ wallW, roomD, results }: { wallW: number; roomD: number; results: ConfigResult[] }) {
+  const SVG_W = 300;
+  const SVG_H = 220;
+  const PAD = 28; // space for dimension labels
 
-  const rW = Math.min(wallWidth * scale, W);
-  const rH = Math.min(roomDepth * scale, H);
-  const ox = (W - rW) / 2;
-  const oy = (H - rH) / 2;
+  const drawW = SVG_W - PAD * 2;
+  const drawH = SVG_H - PAD * 2;
 
-  // Sofas to draw
-  const sofas = [
-    { w: 220, d: 105, color: "#CEC8BA", label: "Compact" },
-    { w: 310, d: 105, color: "#7DAF96", label: "Urban" },
-  ];
+  // Scale: fit the room into the draw area
+  const maxDim = Math.max(wallW, roomD, 400);
+  const scaleX = drawW / maxDim;
+  const scaleY = drawH / maxDim;
+  const scale = Math.min(scaleX, scaleY);
+
+  const rW = wallW * scale;
+  const rH = roomD * scale;
+  const ox = PAD + (drawW - rW) / 2;
+  const oy = PAD + (drawH - rH) / 2;
+
+  // Sofas to draw (only non-rincon ones fit neatly as rects)
+  const sofasToDraw = ["compact", "urban", "family-chaise"].map((id) => {
+    const meta = SOFAS_META[id];
+    const result = results.find((r) => r.id === id)!;
+    return { ...meta, fit: result.fit };
+  });
+
+  // Walking clearance line (60 cm from sofas)
+  const clearance = 60 * scale;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" style={{ maxHeight: 200 }}>
-      {/* Room background */}
-      <rect x={ox} y={oy} width={rW} height={rH} fill="#F2F1EC" stroke="#CEC8BA" strokeWidth="1.5" rx="2" />
-      {/* Wall label */}
-      <text x={ox + rW / 2} y={oy - 6} textAnchor="middle" fontSize="9" fill="#9B9B90">
-        {wallWidth} cm
+    <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} className="w-full h-auto select-none">
+      {/* ── Room rectangle ── */}
+      <rect x={ox} y={oy} width={rW} height={rH} fill="#F8F7F3" stroke="#CEC8BA" strokeWidth="1.5" rx="3" />
+
+      {/* ── Sofas (stacked from back wall, shown if they fit width) ── */}
+      {sofasToDraw.map((s) => {
+        const sw = s.w * scale;
+        const sd = s.d * scale;
+        if (sw > rW) return null; // doesn't fit width
+        const alpha = s.fit === "ideal" ? 0.85 : s.fit === "tight" ? 0.5 : 0.18;
+        const textColor = s.fit === "no" ? "#CEC8BA" : "#fff";
+        return (
+          <g key={s.label}>
+            <rect
+              x={ox + (rW - sw) / 2}
+              y={oy + 2}
+              width={sw}
+              height={Math.min(sd, rH - 4)}
+              fill={s.color}
+              rx="3"
+              opacity={alpha}
+            />
+            {s.fit !== "no" && sd < rH - 4 && (
+              <text
+                x={ox + rW / 2}
+                y={oy + sd / 2 + 5}
+                textAnchor="middle"
+                fontSize="9"
+                fontWeight="600"
+                fill={textColor}
+                opacity={alpha}
+              >
+                {s.label}
+              </text>
+            )}
+          </g>
+        );
+      })}
+
+      {/* ── Clearance line (60 cm) ── */}
+      {results.some((r) => r.fit !== "no") && clearance < rH && (
+        <line
+          x1={ox + 4}
+          x2={ox + rW - 4}
+          y1={oy + 105 * scale + clearance}
+          y2={oy + 105 * scale + clearance}
+          stroke="#7DAF96"
+          strokeWidth="1"
+          strokeDasharray="4 3"
+          opacity={0.5}
+        />
+      )}
+
+      {/* ── Dimension labels ── */}
+      {/* Width */}
+      <line x1={ox} x2={ox + rW} y1={oy + rH + 10} y2={oy + rH + 10} stroke="#9B9B90" strokeWidth="0.8" />
+      <line x1={ox} x2={ox} y1={oy + rH + 6} y2={oy + rH + 14} stroke="#9B9B90" strokeWidth="0.8" />
+      <line x1={ox + rW} x2={ox + rW} y1={oy + rH + 6} y2={oy + rH + 14} stroke="#9B9B90" strokeWidth="0.8" />
+      <text x={ox + rW / 2} y={oy + rH + 22} textAnchor="middle" fontSize="9" fill="#9B9B90">
+        {wallW} cm
       </text>
+
+      {/* Depth */}
+      <line x1={ox - 10} x2={ox - 10} y1={oy} y2={oy + rH} stroke="#9B9B90" strokeWidth="0.8" />
+      <line x1={ox - 14} x2={ox - 6} y1={oy} y2={oy} stroke="#9B9B90" strokeWidth="0.8" />
+      <line x1={ox - 14} x2={ox - 6} y1={oy + rH} y2={oy + rH} stroke="#9B9B90" strokeWidth="0.8" />
       <text
-        x={ox - 6}
+        x={ox - 18}
         y={oy + rH / 2}
         textAnchor="middle"
         fontSize="9"
         fill="#9B9B90"
-        transform={`rotate(-90, ${ox - 6}, ${oy + rH / 2})`}
+        transform={`rotate(-90, ${ox - 18}, ${oy + rH / 2})`}
       >
-        {roomDepth} cm
+        {roomD} cm
       </text>
 
-      {/* Compact sofa */}
-      {wallWidth >= 220 && roomDepth >= 135 && (
-        <rect
-          x={ox + 4}
-          y={oy + 4}
-          width={Math.min(220 * scale, rW - 8)}
-          height={Math.min(105 * scale, rH / 2)}
-          fill="#CEC8BA"
-          rx="3"
-          opacity={0.8}
-        />
-      )}
-
-      {/* Urban sofa (only if room is wide enough) */}
-      {wallWidth >= 310 && roomDepth >= 135 && (
-        <rect
-          x={ox + 4}
-          y={oy + 4}
-          width={Math.min(310 * scale, rW - 8)}
-          height={Math.min(105 * scale, rH / 2)}
-          fill="#7DAF96"
-          rx="3"
-          opacity={0.7}
-        />
-      )}
+      {/* ── Legend ── */}
+      {[
+        { color: "#CEC8BA", label: "Compact" },
+        { color: "#9B9B90", label: "Urban" },
+        { color: "#7DAF96", label: "Family" },
+      ].map((l, i) => (
+        <g key={l.label} transform={`translate(${ox + i * 70}, ${SVG_H - 10})`}>
+          <rect x={0} y={-7} width={10} height={8} fill={l.color} rx="1.5" opacity={0.7} />
+          <text x={13} y={0} fontSize="8" fill="#9B9B90">{l.label}</text>
+        </g>
+      ))}
     </svg>
   );
 }
 
+// ─── Slider ───────────────────────────────────────────────────────────────────
+
+function DimSlider({
+  label,
+  sublabel,
+  value,
+  onChange,
+  min = 150,
+  max = 600,
+}: {
+  label: string;
+  sublabel: string;
+  value: number;
+  onChange: (v: number) => void;
+  min?: number;
+  max?: number;
+}) {
+  const pct = ((value - min) / (max - min)) * 100;
+  return (
+    <div className="space-y-2">
+      <div className="flex items-baseline justify-between">
+        <div>
+          <p className="text-xs font-semibold text-[#1E1E1C] uppercase tracking-wider">{label}</p>
+          <p className="text-[10px] text-[#9B9B90] mt-0.5">{sublabel}</p>
+        </div>
+        <div className="flex items-baseline gap-1">
+          <span className="text-2xl font-bold text-[#1E1E1C] tabular-nums">{value}</span>
+          <span className="text-xs text-[#9B9B90]">cm</span>
+        </div>
+      </div>
+      <div className="relative h-1.5 rounded-full bg-[#CEC8BA]/50">
+        <div
+          className="absolute left-0 top-0 h-full rounded-full bg-[#1E1E1C] transition-all duration-75"
+          style={{ width: `${pct}%` }}
+        />
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={5}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="absolute inset-0 w-full opacity-0 cursor-pointer h-full"
+        />
+        {/* Thumb */}
+        <div
+          className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#1E1E1C] border-2 border-[#F2F1EC] shadow pointer-events-none transition-all duration-75"
+          style={{ left: `calc(${pct}% - 8px)` }}
+        />
+      </div>
+      {/* Min/max hints */}
+      <div className="flex justify-between text-[10px] text-[#CEC8BA]">
+        <span>{min} cm</span>
+        <span>{max} cm</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Page ────────────────────────────────────────────────────────────────────
+
 export default function CalculadoraPage() {
-  const [wallWidth, setWallWidth] = useState<string>("");
-  const [roomDepth, setRoomDepth] = useState<string>("");
-  const [calculated, setCalculated] = useState(false);
+  const [wallW, setWallW] = useState(350);
+  const [roomD, setRoomD] = useState(400);
 
-  const wNum = parseInt(wallWidth, 10) || 0;
-  const dNum = parseInt(roomDepth, 10) || 0;
-  const results = calculated && wNum > 0 && dNum > 0 ? getResults(wNum, dNum) : null;
-
-  const idealCount = results?.filter((r) => r.fit === "ideal").length ?? 0;
-  const tightCount = results?.filter((r) => r.fit === "tight").length ?? 0;
+  const results = useMemo(() => getResults(wallW, roomD), [wallW, roomD]);
+  const idealCount = results.filter((r) => r.fit === "ideal").length;
+  const tightCount = results.filter((r) => r.fit === "tight").length;
 
   return (
-    <div className="pt-32 pb-24">
+    <div className="min-h-screen pt-24 pb-16 bg-[#F2F1EC]">
       <div className="modu-container">
-        {/* Hero */}
-        <div className="max-w-xl mb-16">
-          <p className="text-xs font-semibold tracking-widest uppercase text-[#9B9B90] mb-2">
-            Calculadora
-          </p>
-          <h1 className="text-4xl md:text-5xl font-bold text-[#1E1E1C] leading-tight mb-4">
-            ¿Cabe en tu salón?
-          </h1>
-          <p className="text-[#9B9B90] text-sm leading-relaxed">
-            Introduce las medidas de la pared donde irá el sofá y el fondo disponible de la habitación. Te decimos qué configuraciones encajan cómodamente.
-          </p>
+        {/* ── Header ── */}
+        <div className="mb-8">
+          <p className="text-xs font-semibold tracking-widest uppercase text-[#9B9B90] mb-1">Calculadora</p>
+          <h1 className="text-3xl md:text-4xl font-bold text-[#1E1E1C]">¿Cabe en tu salón?</h1>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
-          {/* Input panel */}
-          <div>
-            <div className="bg-[#F2F1EC] border border-[#CEC8BA] rounded-2xl p-8">
-              <h2 className="text-lg font-bold text-[#1E1E1C] mb-6">Medidas del salón</h2>
+        {/* ── Main grid ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-6 items-start">
 
-              <div className="space-y-5">
-                <div>
-                  <label className="block text-xs font-semibold text-[#9B9B90] uppercase tracking-wider mb-2">
-                    Ancho de la pared donde irá el sofá (cm)
-                  </label>
-                  <input
-                    type="number"
-                    min={100}
-                    max={1000}
-                    value={wallWidth}
-                    onChange={(e) => { setWallWidth(e.target.value); setCalculated(false); }}
-                    placeholder="Ej: 350"
-                    className="w-full px-4 py-3 rounded-xl border border-[#CEC8BA] bg-white text-[#1E1E1C] text-sm focus:outline-none focus:border-[#1E1E1C] transition-colors placeholder:text-[#CEC8BA]"
-                  />
-                  <p className="text-xs text-[#9B9B90] mt-1.5">
-                    Mide la longitud de la pared donde apoyará el respaldo del sofá.
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#9B9B90] uppercase tracking-wider mb-2">
-                    Profundidad disponible del salón (cm)
-                  </label>
-                  <input
-                    type="number"
-                    min={100}
-                    max={1000}
-                    value={roomDepth}
-                    onChange={(e) => { setRoomDepth(e.target.value); setCalculated(false); }}
-                    placeholder="Ej: 400"
-                    className="w-full px-4 py-3 rounded-xl border border-[#CEC8BA] bg-white text-[#1E1E1C] text-sm focus:outline-none focus:border-[#1E1E1C] transition-colors placeholder:text-[#CEC8BA]"
-                  />
-                  <p className="text-xs text-[#9B9B90] mt-1.5">
-                    Mide desde esa pared hasta el lado opuesto de la habitación.
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setCalculated(true)}
-                disabled={!wallWidth || !roomDepth || wNum <= 0 || dNum <= 0}
-                className="w-full mt-8 bg-[#1E1E1C] text-[#F2F1EC] py-3.5 rounded-xl font-semibold text-sm hover:opacity-85 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                Ver qué configuraciones caben
-                <ArrowRight size={16} />
-              </button>
+          {/* Left: sliders + diagram */}
+          <div className="space-y-5">
+            <div className="bg-white rounded-2xl border border-[#CEC8BA] p-6 space-y-6">
+              <DimSlider
+                label="Ancho de la pared"
+                sublabel="Donde apoyará el respaldo"
+                value={wallW}
+                onChange={setWallW}
+              />
+              <div className="h-px bg-[#CEC8BA]/50" />
+              <DimSlider
+                label="Fondo del salón"
+                sublabel="Desde esa pared hasta enfrente"
+                value={roomD}
+                onChange={setRoomD}
+              />
             </div>
 
-            {/* Info box */}
-            <div className="mt-4 p-4 rounded-xl bg-[#CEC8BA]/20 border border-[#CEC8BA]">
-              <p className="text-xs text-[#9B9B90] leading-relaxed">
-                <strong className="text-[#1E1E1C]">Nota:</strong> El cálculo reserva 60 cm mínimos delante del sofá para poder moverse cómodamente. El resultado "Cabe justo" indica solo 30-60 cm de espacio libre delante.
+            {/* Diagram */}
+            <div className="bg-white rounded-2xl border border-[#CEC8BA] p-4">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#9B9B90] mb-3 px-1">
+                Vista de planta · escala aproximada
+              </p>
+              <RoomDiagram wallW={wallW} roomD={roomD} results={results} />
+              <p className="text-[10px] text-[#9B9B90] mt-2 px-1">
+                --- línea verde = 60 cm de paso mínimo delante del sofá
               </p>
             </div>
           </div>
 
-          {/* Results panel */}
-          <div>
-            {!calculated && (
-              <div className="rounded-2xl border border-dashed border-[#CEC8BA] p-10 flex flex-col items-center justify-center text-center gap-3 min-h-[300px]">
-                <div className="w-12 h-12 rounded-full bg-[#CEC8BA]/30 flex items-center justify-center">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#9B9B90" strokeWidth="1.5" className="w-6 h-6">
-                    <path d="M3 9h18M3 15h18M9 3v18M15 3v18" strokeLinecap="round" />
-                  </svg>
-                </div>
-                <p className="text-sm text-[#9B9B90]">Introduce las medidas para ver los resultados.</p>
+          {/* Right: results */}
+          <div className="space-y-3">
+            {/* Summary pill */}
+            <div className="rounded-xl bg-[#1E1E1C] px-5 py-3.5 flex items-center justify-between gap-4">
+              <p className="text-[#F2F1EC] text-sm font-medium">
+                {idealCount > 0
+                  ? `${idealCount} ${idealCount === 1 ? "formato encaja" : "formatos encajan"} perfectamente`
+                  : tightCount > 0
+                  ? `${tightCount} ${tightCount === 1 ? "formato cabe" : "formatos caben"} con espacio justo`
+                  : "Ningún formato encaja en ese espacio"}
+              </p>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {(["ideal", "tight", "no"] as FitResult[]).map((f) => (
+                  <div key={f} className={`w-2.5 h-2.5 rounded-full ${FIT_UI[f].dotColor}`} />
+                ))}
               </div>
-            )}
+            </div>
 
-            {calculated && results && (
-              <div className="space-y-4">
-                {/* Summary */}
-                <div className="rounded-xl bg-[#1E1E1C] px-6 py-4">
-                  <p className="text-[#F2F1EC] font-semibold text-sm">
-                    {idealCount > 0
-                      ? `${idealCount} ${idealCount === 1 ? "configuración encaja" : "configuraciones encajan"} perfectamente.`
-                      : tightCount > 0
-                      ? `${tightCount} ${tightCount === 1 ? "configuración cabe" : "configuraciones caben"} con espacio justo.`
-                      : "Ninguna configuración encaja en ese espacio."}
-                  </p>
-                  <p className="text-[#9B9B90] text-xs mt-1">
-                    Pared {wNum} cm · Fondo {dNum} cm
-                  </p>
-                </div>
-
-                {/* Config results */}
-                {results.map((r) => {
-                  const fit = FIT_LABELS[r.fit];
-                  return (
-                    <div
-                      key={r.id}
-                      className={`rounded-2xl border p-5 transition-all ${
-                        r.fit === "ideal"
-                          ? "border-[#7DAF96] bg-[#7DAF96]/5"
-                          : r.fit === "tight"
-                          ? "border-[#CEC8BA] bg-[#CEC8BA]/10"
-                          : "border-[#CEC8BA] bg-[#F2F1EC] opacity-60"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3 mb-2">
-                        <div>
-                          <h3 className="font-semibold text-[#1E1E1C] text-sm">{r.name}</h3>
-                          <p className="text-xs text-[#9B9B90]">{r.price}</p>
-                        </div>
-                        <div className={`flex items-center gap-1 text-xs font-medium shrink-0 ${fit.color}`}>
-                          {fit.icon}
-                          {fit.label}
-                        </div>
-                      </div>
-                      {r.note && (
-                        <p className="text-xs text-[#9B9B90] leading-relaxed">{r.note}</p>
-                      )}
-                      {r.fit !== "no" && !r.id.includes("rincon") && (
-                        <Link
-                          href="/tienda"
-                          className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#1E1E1C] underline underline-offset-2 hover:opacity-60 transition-opacity"
-                        >
-                          Configurar {r.name.split(" ·")[0]} →
-                        </Link>
-                      )}
+            {/* Config cards */}
+            {results.map((r) => {
+              const ui = FIT_UI[r.fit];
+              return (
+                <div
+                  key={r.id}
+                  className={`rounded-2xl border p-4 transition-all ${ui.cardBg} ${ui.cardBorder} ${r.fit === "no" ? "opacity-50" : ""}`}
+                >
+                  <div className="flex items-start justify-between gap-3 mb-1.5">
+                    <div>
+                      <p className="font-semibold text-[#1E1E1C] text-sm">{r.name}</p>
+                      <p className="text-xs text-[#9B9B90]">{r.price}</p>
                     </div>
-                  );
-                })}
-
-                {/* CTA */}
-                <div className="pt-2">
-                  <Link
-                    href="/comparar"
-                    className="text-xs text-[#9B9B90] underline underline-offset-2 hover:text-[#1E1E1C] transition-colors"
-                  >
-                    Ver comparación completa de formatos →
-                  </Link>
+                    <div className={`flex items-center gap-1 text-xs font-semibold shrink-0 ${
+                      r.fit === "ideal" ? "text-[#7DAF96]" : r.fit === "tight" ? "text-[#C4A882]" : "text-[#9B9B90]"
+                    }`}>
+                      {ui.icon}
+                      {ui.label}
+                    </div>
+                  </div>
+                  <p className="text-xs text-[#9B9B90] leading-relaxed">{r.note}</p>
+                  {/* Dimension chips */}
+                  <div className="flex items-center gap-2 mt-2.5">
+                    <span className="text-[10px] font-medium bg-[#1E1E1C]/6 text-[#1E1E1C] px-2 py-0.5 rounded-full">
+                      {r.sofaW} cm ancho
+                    </span>
+                    <span className="text-[10px] font-medium bg-[#1E1E1C]/6 text-[#1E1E1C] px-2 py-0.5 rounded-full">
+                      {r.sofaD} cm fondo
+                    </span>
+                    {r.fit !== "no" && (
+                      <Link
+                        href="/tienda"
+                        className="ml-auto text-[10px] font-semibold text-[#1E1E1C] underline underline-offset-2 hover:opacity-60 transition-opacity"
+                      >
+                        Configurar →
+                      </Link>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        </div>
+              );
+            })}
 
-        {/* Bottom CTA */}
-        <div className="mt-16 text-center">
-          <p className="text-sm text-[#9B9B90] mb-4">¿Tienes dudas sobre qué cabe en tu espacio?</p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link
-              href="/showrooms"
-              className="inline-flex items-center justify-center bg-[#1E1E1C] text-[#F2F1EC] px-8 py-3.5 rounded-md font-semibold text-sm hover:opacity-85 transition-opacity"
-            >
-              Visitar un showroom →
-            </Link>
-            <Link
-              href="/contacto"
-              className="inline-flex items-center justify-center border border-[#1E1E1C] text-[#1E1E1C] px-8 py-3.5 rounded-md font-semibold text-sm hover:bg-[#CEC8BA]/20 transition-colors"
-            >
-              Hablar con un asesor
-            </Link>
+            {/* Legend */}
+            <div className="flex items-center gap-4 px-1 pt-1">
+              {(["ideal", "tight", "no"] as FitResult[]).map((f) => (
+                <div key={f} className="flex items-center gap-1.5">
+                  <div className={`w-2 h-2 rounded-full ${FIT_UI[f].dotColor}`} />
+                  <span className="text-[10px] text-[#9B9B90]">{FIT_UI[f].label}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Bottom CTAs */}
+            <div className="flex flex-col sm:flex-row gap-2 pt-2">
+              <Link
+                href="/comparar"
+                className="flex-1 text-center py-2.5 rounded-lg border border-[#CEC8BA] text-xs font-semibold text-[#1E1E1C] hover:border-[#1E1E1C] transition-colors"
+              >
+                Comparar formatos →
+              </Link>
+              <Link
+                href="/showrooms"
+                className="flex-1 text-center py-2.5 rounded-lg bg-[#1E1E1C] text-xs font-semibold text-[#F2F1EC] hover:opacity-85 transition-opacity"
+              >
+                Visitar un showroom →
+              </Link>
+            </div>
           </div>
         </div>
       </div>
