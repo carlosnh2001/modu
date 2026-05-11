@@ -130,16 +130,16 @@ export default function Footer() {
               </span>
             ))}
           </div>
-          <div className="flex gap-4">
-            <a href="#" className="hover:text-[#7DAF96] transition-colors">
-              Política de privacidad
-            </a>
-            <a href="#" className="hover:text-[#7DAF96] transition-colors">
+          <div className="flex gap-4 flex-wrap justify-center md:justify-end">
+            <Link href="/politica-de-privacidad" className="hover:text-[#7DAF96] transition-colors">
+              Privacidad
+            </Link>
+            <Link href="/politica-de-cookies" className="hover:text-[#7DAF96] transition-colors">
               Cookies
-            </a>
-            <a href="#" className="hover:text-[#7DAF96] transition-colors">
-              Términos y condiciones
-            </a>
+            </Link>
+            <Link href="/aviso-legal" className="hover:text-[#7DAF96] transition-colors">
+              Aviso legal
+            </Link>
           </div>
         </div>
       </div>

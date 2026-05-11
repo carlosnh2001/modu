@@ -40,14 +40,34 @@ export default function ShowroomsPreview() {
               initial={{ opacity: 0, y: 20 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: i * 0.1, ease: "easeOut" }}
-              className="flex flex-col items-center gap-3 p-6 border border-[#CEC8BA] rounded-xl bg-[#F2F1EC] hover:shadow-sm hover:border-[#9B9B90] transition-all text-center cursor-pointer"
+              className="flex flex-col gap-3 p-5 border border-[#CEC8BA] rounded-xl bg-[#F2F1EC] hover:shadow-sm hover:border-[#9B9B90] transition-all text-left cursor-pointer"
             >
-              <MapPin size={20} className="text-[#7DAF96]" />
-              <p className="font-semibold text-[#1E1E1C]">{s.city}</p>
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#7DAF96]" />
-                <span className="text-xs text-[#9B9B90]">Abierto</span>
+              {/* Header */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="w-8 h-8 rounded-full bg-[#7DAF96]/15 flex items-center justify-center shrink-0">
+                  <MapPin size={14} className="text-[#7DAF96]" />
+                </div>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#7DAF96] shrink-0" />
+                  <span className="text-[10px] text-[#9B9B90]">
+                    {s.status === "open" ? "Abierto" : "Próximamente"}
+                  </span>
+                </div>
               </div>
+
+              {/* City */}
+              <p className="font-bold text-[#1E1E1C] text-base leading-tight">{s.city}</p>
+
+              {/* Address */}
+              <p className="text-xs text-[#9B9B90] leading-snug">{s.address}</p>
+
+              {/* Description */}
+              <p className="text-xs text-[#9B9B90] leading-snug">{s.description}</p>
+
+              {/* CTA */}
+              <span className="text-xs font-semibold text-[#7DAF96] mt-auto">
+                Solicitar visita →
+              </span>
             </motion.button>
           ))}
         </div>

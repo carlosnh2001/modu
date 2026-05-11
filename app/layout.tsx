@@ -5,6 +5,7 @@ import NavbarClient from "@/components/layout/NavbarClient";
 import Footer from "@/components/layout/Footer";
 import TrustBanner from "@/components/layout/TrustBanner";
 import CartDrawer from "@/components/cart/CartDrawer";
+import CookieBanner from "@/components/layout/CookieBanner";
 import { NavbarProvider } from "@/components/layout/NavbarProvider";
 
 const inter = Inter({
@@ -37,6 +38,7 @@ export default function RootLayout({
           <main className="min-h-screen">{children}</main>
           <Footer />
           <CartDrawer />
+          <CookieBanner />
         </NavbarProvider>
       </body>
     </html>
