@@ -22,7 +22,7 @@ const CELL_DATA = {
   compact: {
     precio: "725 €",
     composicion: "2 asientos + 2 brazos",
-    modulos: "4 módulos",
+    modulos: "2 módulos",
     ancho: "220 cm",
     fondo: "105 cm",
     altura: "90 cm",
@@ -33,7 +33,7 @@ const CELL_DATA = {
   urban: {
     precio: "1.150 €",
     composicion: "3 asientos + 2 brazos",
-    modulos: "5 módulos",
+    modulos: "3 módulos",
     ancho: "310 cm",
     fondo: "105 cm",
     altura: "90 cm",
@@ -44,7 +44,7 @@ const CELL_DATA = {
   family: {
     precio: "1.600 €",
     composicion: "3 asientos + módulo + 2 brazos",
-    modulos: "6 módulos",
+    modulos: "3–4 módulos",
     ancho: "310 cm",
     fondo: "Variable",
     altura: "90 cm",
