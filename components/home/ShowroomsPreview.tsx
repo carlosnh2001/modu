@@ -58,9 +58,6 @@ export default function ShowroomsPreview() {
               {/* City */}
               <p className="font-bold text-[#1E1E1C] text-base leading-tight">{s.city}</p>
 
-              {/* Address */}
-              <p className="text-xs text-[#9B9B90] leading-snug">{s.address}</p>
-
               {/* Description */}
               <p className="text-xs text-[#9B9B90] leading-snug">{s.description}</p>
 

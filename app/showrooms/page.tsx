@@ -81,8 +81,8 @@ export default function ShowroomsPage() {
                       Abierto
                     </span>
                   </div>
-                  <p className="text-xs text-[#9B9B90]">
-                    Dirección disponible próximamente
+                  <p className="text-xs text-[#9B9B90] leading-relaxed">
+                    {s.description}
                   </p>
                 </div>
                 <button
