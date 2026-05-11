@@ -54,6 +54,9 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Oculta el header "X-Powered-By: Next.js" para evitar fingerprinting
+  poweredByHeader: false,
+
   // ─── Security Headers ──────────────────────────────────────────────────────
   async headers() {
     return [
