@@ -25,6 +25,8 @@ export default function MuestrasPage() {
     formState: { errors },
   } = useForm<FormData>();
 
+  const sanitize = (v: string) => v.replace(/<[^>]*>/g, "").trim();
+
   const onSubmit = () => {
     setSent(true);
   };
@@ -65,12 +67,18 @@ export default function MuestrasPage() {
                 Nombre completo *
               </label>
               <input
-                {...register("nombre", { required: true })}
+                {...register("nombre", {
+                  required: "El nombre es obligatorio",
+                  maxLength: { value: 100, message: "Máximo 100 caracteres" },
+                  setValueAs: sanitize,
+                })}
+                autoComplete="name"
                 className={`w-full border rounded-md px-4 py-3 text-sm bg-transparent focus:outline-none transition-colors ${
                   errors.nombre ? "border-red-400" : "border-[#CEC8BA] focus:border-[#1E1E1C]"
                 }`}
                 placeholder="Tu nombre"
               />
+              {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
             </div>
 
             {/* Email */}
@@ -79,13 +87,19 @@ export default function MuestrasPage() {
                 Email *
               </label>
               <input
-                {...register("email", { required: true, pattern: /^\S+@\S+\.\S+$/ })}
+                {...register("email", {
+                  required: "El email es obligatorio",
+                  pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Email no válido" },
+                  maxLength: { value: 254, message: "Email demasiado largo" },
+                })}
                 type="email"
+                autoComplete="email"
                 className={`w-full border rounded-md px-4 py-3 text-sm bg-transparent focus:outline-none transition-colors ${
                   errors.email ? "border-red-400" : "border-[#CEC8BA] focus:border-[#1E1E1C]"
                 }`}
                 placeholder="tu@email.com"
               />
+              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
             </div>
 
             {/* Teléfono */}
@@ -94,11 +108,17 @@ export default function MuestrasPage() {
                 Teléfono
               </label>
               <input
-                {...register("telefono")}
+                {...register("telefono", {
+                  pattern: { value: /^[+\d\s\-()]{7,20}$/, message: "Teléfono no válido" },
+                })}
                 type="tel"
-                className="w-full border border-[#CEC8BA] rounded-md px-4 py-3 text-sm bg-transparent focus:outline-none focus:border-[#1E1E1C] transition-colors"
+                autoComplete="tel"
+                className={`w-full border border-[#CEC8BA] rounded-md px-4 py-3 text-sm bg-transparent focus:outline-none focus:border-[#1E1E1C] transition-colors ${
+                  errors.telefono ? "border-red-400" : "border-[#CEC8BA] focus:border-[#1E1E1C]"
+                }`}
                 placeholder="+34 600 000 000"
               />
+              {errors.telefono && <p className="text-red-500 text-xs mt-1">{errors.telefono.message}</p>}
             </div>
 
             {/* Dirección */}
@@ -107,27 +127,50 @@ export default function MuestrasPage() {
                 Dirección completa *
               </label>
               <input
-                {...register("calle", { required: true })}
+                {...register("calle", {
+                  required: "La dirección es obligatoria",
+                  maxLength: { value: 200, message: "Máximo 200 caracteres" },
+                  setValueAs: sanitize,
+                })}
+                autoComplete="street-address"
                 className={`w-full border rounded-md px-4 py-3 text-sm bg-transparent focus:outline-none transition-colors mb-2 ${
                   errors.calle ? "border-red-400" : "border-[#CEC8BA] focus:border-[#1E1E1C]"
                 }`}
                 placeholder="Calle, número, piso"
               />
+              {errors.calle && <p className="text-red-500 text-xs mt-1 mb-1">{errors.calle.message}</p>}
               <div className="grid grid-cols-2 gap-3">
-                <input
-                  {...register("ciudad", { required: true })}
-                  className={`w-full border rounded-md px-4 py-3 text-sm bg-transparent focus:outline-none transition-colors ${
-                    errors.ciudad ? "border-red-400" : "border-[#CEC8BA] focus:border-[#1E1E1C]"
-                  }`}
-                  placeholder="Ciudad"
-                />
-                <input
-                  {...register("cp", { required: true })}
-                  className={`w-full border rounded-md px-4 py-3 text-sm bg-transparent focus:outline-none transition-colors ${
-                    errors.cp ? "border-red-400" : "border-[#CEC8BA] focus:border-[#1E1E1C]"
-                  }`}
-                  placeholder="Código postal"
-                />
+                <div>
+                  <input
+                    {...register("ciudad", {
+                      required: "La ciudad es obligatoria",
+                      maxLength: { value: 100, message: "Máximo 100 caracteres" },
+                      setValueAs: sanitize,
+                    })}
+                    autoComplete="address-level2"
+                    className={`w-full border rounded-md px-4 py-3 text-sm bg-transparent focus:outline-none transition-colors ${
+                      errors.ciudad ? "border-red-400" : "border-[#CEC8BA] focus:border-[#1E1E1C]"
+                    }`}
+                    placeholder="Ciudad"
+                  />
+                  {errors.ciudad && <p className="text-red-500 text-xs mt-1">{errors.ciudad.message}</p>}
+                </div>
+                <div>
+                  <input
+                    {...register("cp", {
+                      required: "El código postal es obligatorio",
+                      pattern: { value: /^\d{5}$/, message: "CP de 5 dígitos" },
+                    })}
+                    autoComplete="postal-code"
+                    inputMode="numeric"
+                    maxLength={5}
+                    className={`w-full border rounded-md px-4 py-3 text-sm bg-transparent focus:outline-none transition-colors ${
+                      errors.cp ? "border-red-400" : "border-[#CEC8BA] focus:border-[#1E1E1C]"
+                    }`}
+                    placeholder="Código postal"
+                  />
+                  {errors.cp && <p className="text-red-500 text-xs mt-1">{errors.cp.message}</p>}
+                </div>
               </div>
             </div>
 
@@ -163,11 +206,17 @@ export default function MuestrasPage() {
                 Mensaje (opcional)
               </label>
               <textarea
-                {...register("mensaje")}
+                {...register("mensaje", {
+                  maxLength: { value: 1000, message: "Máximo 1000 caracteres" },
+                  setValueAs: sanitize,
+                })}
                 rows={3}
-                className="w-full border border-[#CEC8BA] rounded-md px-4 py-3 text-sm bg-transparent focus:outline-none focus:border-[#1E1E1C] transition-colors resize-none"
+                className={`w-full border rounded-md px-4 py-3 text-sm bg-transparent focus:outline-none focus:border-[#1E1E1C] transition-colors resize-none ${
+                  errors.mensaje ? "border-red-400" : "border-[#CEC8BA]"
+                }`}
                 placeholder="¿Tienes alguna pregunta?"
               />
+              {errors.mensaje && <p className="text-red-500 text-xs mt-1">{errors.mensaje.message}</p>}
             </div>
 
             <button

@@ -28,6 +28,9 @@ export default function ContactoPage() {
     formState: { errors },
   } = useForm<FormData>({ defaultValues: { motivo: MOTIVOS[0] } });
 
+  // Strip HTML tags to prevent stored XSS if messages are ever rendered server-side
+  const sanitize = (v: string) => v.replace(/<[^>]*>/g, "").trim();
+
   return (
     <div className="pt-32 pb-24">
       <div className="modu-container">
@@ -126,27 +129,60 @@ export default function ContactoPage() {
               onSubmit={handleSubmit(() => setSent(true))}
               className="space-y-5"
             >
-              {[
-                { name: "nombre" as const, label: "Nombre *", type: "text", placeholder: "Tu nombre" },
-                { name: "email" as const, label: "Email *", type: "email", placeholder: "tu@email.com" },
-                { name: "telefono" as const, label: "Teléfono", type: "tel", placeholder: "+34 600 000 000", optional: true },
-              ].map((f) => (
-                <div key={f.name}>
-                  <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">
-                    {f.label}
-                  </label>
-                  <input
-                    {...register(f.name, f.optional ? {} : { required: true })}
-                    type={f.type}
-                    placeholder={f.placeholder}
-                    className={`w-full border rounded-md px-4 py-3 text-sm bg-transparent focus:outline-none transition-colors ${
-                      errors[f.name]
-                        ? "border-red-400"
-                        : "border-[#CEC8BA] focus:border-[#1E1E1C]"
-                    }`}
-                  />
-                </div>
-              ))}
+              {/* Nombre */}
+              <div>
+                <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">Nombre *</label>
+                <input
+                  {...register("nombre", {
+                    required: "El nombre es obligatorio",
+                    maxLength: { value: 100, message: "Máximo 100 caracteres" },
+                    setValueAs: sanitize,
+                  })}
+                  type="text"
+                  placeholder="Tu nombre"
+                  autoComplete="name"
+                  className={`w-full border rounded-md px-4 py-3 text-sm bg-transparent focus:outline-none transition-colors ${
+                    errors.nombre ? "border-red-400" : "border-[#CEC8BA] focus:border-[#1E1E1C]"
+                  }`}
+                />
+                {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">Email *</label>
+                <input
+                  {...register("email", {
+                    required: "El email es obligatorio",
+                    pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Email no válido" },
+                    maxLength: { value: 254, message: "Email demasiado largo" },
+                  })}
+                  type="email"
+                  placeholder="tu@email.com"
+                  autoComplete="email"
+                  className={`w-full border rounded-md px-4 py-3 text-sm bg-transparent focus:outline-none transition-colors ${
+                    errors.email ? "border-red-400" : "border-[#CEC8BA] focus:border-[#1E1E1C]"
+                  }`}
+                />
+                {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
+              </div>
+
+              {/* Teléfono */}
+              <div>
+                <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">Teléfono</label>
+                <input
+                  {...register("telefono", {
+                    pattern: { value: /^[+\d\s\-()]{7,20}$/, message: "Teléfono no válido" },
+                  })}
+                  type="tel"
+                  placeholder="+34 600 000 000"
+                  autoComplete="tel"
+                  className={`w-full border rounded-md px-4 py-3 text-sm bg-transparent focus:outline-none transition-colors ${
+                    errors.telefono ? "border-red-400" : "border-[#CEC8BA] focus:border-[#1E1E1C]"
+                  }`}
+                />
+                {errors.telefono && <p className="text-red-500 text-xs mt-1">{errors.telefono.message}</p>}
+              </div>
 
               <div>
                 <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">
@@ -169,7 +205,11 @@ export default function ContactoPage() {
                   Mensaje *
                 </label>
                 <textarea
-                  {...register("mensaje", { required: true })}
+                  {...register("mensaje", {
+                    required: "El mensaje es obligatorio",
+                    maxLength: { value: 2000, message: "Máximo 2000 caracteres" },
+                    setValueAs: sanitize,
+                  })}
                   rows={5}
                   className={`w-full border rounded-md px-4 py-3 text-sm bg-transparent focus:outline-none transition-colors resize-none ${
                     errors.mensaje
@@ -178,6 +218,7 @@ export default function ContactoPage() {
                   }`}
                   placeholder="¿En qué podemos ayudarte?"
                 />
+                {errors.mensaje && <p className="text-red-500 text-xs mt-1">{errors.mensaje.message}</p>}
               </div>
 
               <button
