@@ -1,7 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { useInView } from "framer-motion";
+import { motion, useInView, useReducedMotion } from "framer-motion";
 import { useRef } from "react";
 import { Package, Settings2, RefreshCw } from "lucide-react";
 
@@ -26,18 +25,24 @@ const BENEFITS = [
 export default function BenefitsSection() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
+  const shouldReduce = useReducedMotion();
 
   return (
     <section ref={ref} className="py-20 md:py-28 bg-[#F2F1EC]">
       <div className="modu-container">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
           {BENEFITS.map((b, i) => (
             <motion.div
               key={b.title}
-              initial={{ opacity: 0, y: 24 }}
+              initial={shouldReduce ? false : { opacity: 0, y: 28 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.6, delay: i * 0.15, ease: "easeOut" }}
-              className="flex flex-col items-start gap-4"
+              transition={{ duration: 0.65, delay: i * 0.18, ease: "easeOut" }}
+              whileHover={shouldReduce ? {} : {
+                y: -6,
+                boxShadow: "0 20px 48px rgba(30,30,28,0.09)",
+              }}
+              className="flex flex-col items-start gap-4 p-7 rounded-2xl border border-[#CEC8BA] bg-[#F2F1EC] cursor-default"
+              style={{ transition: "box-shadow 0.3s ease" }}
             >
               <div className="w-11 h-11 rounded-full bg-[#7DAF96]/15 flex items-center justify-center">
                 <b.Icon size={20} className="text-[#7DAF96]" />

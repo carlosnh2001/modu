@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { fabricFamilies } from "@/data/products";
+import D2CChain from "@/components/por-que-modu/D2CChain";
 
 export const metadata: Metadata = { title: "Por qué Modu" };
 
@@ -161,6 +162,7 @@ export default function PorQueModu() {
 
         {/* Sin intermediarios */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center mb-24">
+          {/* Left: text */}
           <div>
             <p className="text-xs font-semibold tracking-widest uppercase text-[#7DAF96] mb-2">
               D2C
@@ -172,35 +174,27 @@ export default function PorQueModu() {
               Vendemos directamente. Sin tiendas multimarca, sin márgenes de
               distribuidor. El precio que ves es el precio que pagas.
             </p>
-            <p className="text-[#9B9B90] leading-relaxed text-sm">
+            <p className="text-[#9B9B90] leading-relaxed text-sm mb-6">
               Eso nos permite ofrecer más calidad al mismo precio que la
               competencia, o mejor calidad al mismo coste.
             </p>
-          </div>
-          <div className="flex flex-col gap-2">
-            {[
-              { label: "Fabricante", active: true },
-              { label: "Distribuidor", active: false },
-              { label: "Tienda multimarca", active: false },
-              { label: "Cliente", active: true },
-            ].map((step, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div
-                  className={`h-10 flex-1 rounded-md flex items-center px-4 text-sm font-medium ${
-                    step.active
-                      ? "bg-[#1E1E1C] text-[#F2F1EC]"
-                      : "bg-[#CEC8BA]/30 text-[#9B9B90] line-through"
-                  }`}
-                >
-                  {step.label}
+            {/* Savings highlight */}
+            <div className="flex gap-4">
+              {[
+                { value: "2", label: "Intermediarios eliminados" },
+                { value: "~30%", label: "Ahorro vs. tienda física" },
+              ].map((s) => (
+                <div key={s.label} className="p-4 border border-[#CEC8BA] rounded-xl">
+                  <p className="text-2xl font-bold text-[#1E1E1C]">{s.value}</p>
+                  <p className="text-xs text-[#9B9B90] leading-snug mt-0.5">{s.label}</p>
                 </div>
-                {step.active && (
-                  <span className="text-[#7DAF96] text-xs font-semibold shrink-0">
-                    ✓
-                  </span>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
+          </div>
+
+          {/* Right: animated D2C chain */}
+          <div className="relative pr-8">
+            <D2CChain />
           </div>
         </div>
 

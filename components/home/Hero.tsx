@@ -3,28 +3,33 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion, type Transition } from "framer-motion";
+import { motion, useScroll, useTransform, useReducedMotion, type Transition } from "framer-motion";
 import { useNavbarColor } from "@/components/layout/NavbarProvider";
 import { ChevronDown } from "lucide-react";
 
-const fadeUp = (delay = 0) => ({
-  initial: { opacity: 0, y: 28 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.7, delay, ease: "easeOut" } as Transition,
-});
-
 export default function Hero() {
   const { setDark } = useNavbarColor();
+  const shouldReduce = useReducedMotion();
 
   useEffect(() => {
     setDark(true);
     return () => setDark(false);
   }, [setDark]);
 
+  // Parallax — image moves 80px upward over 700px of scroll
+  const { scrollY } = useScroll();
+  const imageY = useTransform(scrollY, [0, 700], [0, shouldReduce ? 0 : -80]);
+
+  const fadeUp = (delay = 0) => ({
+    initial: shouldReduce ? false : { opacity: 0, y: 28 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.7, delay, ease: "easeOut" } as Transition,
+  });
+
   return (
     <section className="relative min-h-screen bg-[#1E1E1C] flex items-center overflow-hidden">
-      {/* ── FOTO PRINCIPAL — full viewport background ── */}
-      <div className="absolute inset-0">
+      {/* ── FOTO PRINCIPAL — parallax background ── */}
+      <motion.div className="absolute inset-0" style={{ y: imageY }}>
         <Image
           src="/images/hero-principal.png"
           alt="Sofá MODU en salón"
@@ -38,7 +43,7 @@ export default function Hero() {
         <div className="absolute inset-0 bg-gradient-to-r from-[#1E1E1C]/90 via-[#1E1E1C]/55 to-[#1E1E1C]/10" />
         {/* Subtle bottom vignette */}
         <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#1E1E1C]/40 to-transparent" />
-      </div>
+      </motion.div>
 
       {/* ── Content ── */}
       <div className="modu-container relative z-10 pt-32 pb-24 md:pt-40 md:pb-32">
@@ -51,20 +56,20 @@ export default function Hero() {
           </motion.p>
 
           <motion.h1
-            {...fadeUp(0.25)}
+            {...fadeUp(0.3)}
             className="text-[#F2F1EC] text-5xl md:text-7xl font-bold leading-[1.0] mb-6 tracking-tight"
           >
             El sofá que se adapta a tu vida.
           </motion.h1>
 
           <motion.p
-            {...fadeUp(0.4)}
+            {...fadeUp(0.5)}
             className="text-[#F2F1EC]/70 text-base md:text-lg leading-relaxed mb-10 max-w-lg"
           >
             Configúralo, muévelo, amplíalo. Sin herramientas. En menos de 15 minutos.
           </motion.p>
 
-          <motion.div {...fadeUp(0.55)} className="flex flex-col sm:flex-row gap-4">
+          <motion.div {...fadeUp(0.65)} className="flex flex-col sm:flex-row gap-4">
             <Link
               href="/tienda"
               className="inline-flex items-center justify-center bg-[#F2F1EC] text-[#1E1E1C] px-8 py-4 rounded-md font-semibold text-sm hover:opacity-90 transition-opacity"
@@ -83,13 +88,13 @@ export default function Hero() {
 
       {/* Scroll indicator */}
       <motion.div
-        initial={{ opacity: 0 }}
+        initial={shouldReduce ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1.2, duration: 0.6 }}
+        transition={{ delay: 1.4, duration: 0.6 }}
         className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-[#F2F1EC]/40"
       >
         <motion.div
-          animate={{ y: [0, 6, 0] }}
+          animate={shouldReduce ? {} : { y: [0, 6, 0] }}
           transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
         >
           <ChevronDown size={22} />
