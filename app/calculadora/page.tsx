@@ -151,149 +151,160 @@ function RoomDiagram({
   roomD: number;
   results: ConfigResult[];
 }) {
+  // Fixed zones: left pad for depth label, bottom pad for width label, top/right small
   const SVG_W = 300;
-  const SVG_H = 230;
-  const PAD = 30;
+  const SVG_H = 210;
+  const PAD_L = 34;  // depth label lives here
+  const PAD_R = 8;
+  const PAD_T = 8;
+  const PAD_B = 26;  // width label lives here
 
-  const drawW = SVG_W - PAD * 2;
-  const drawH = SVG_H - PAD * 2;
+  const drawW = SVG_W - PAD_L - PAD_R;
+  const drawH = SVG_H - PAD_T - PAD_B;
 
-  // Scale: fit the room into the draw area
+  // Scale: fit the room into the draw area (square scale)
   const maxDim = Math.max(wallW, roomD, 350);
-  const scaleX = drawW / maxDim;
-  const scaleY = drawH / maxDim;
-  const scale = Math.min(scaleX, scaleY);
+  const scale = Math.min(drawW / maxDim, drawH / maxDim);
 
   const rW = wallW * scale;
   const rH = roomD * scale;
-  const ox = PAD + (drawW - rW) / 2;
-  const oy = PAD + (drawH - rH) / 2;
+
+  // Room always anchored top-left of draw area
+  const ox = PAD_L;
+  const oy = PAD_T;
 
   const fitMap = Object.fromEntries(results.map((r) => [r.id, r.fit]));
 
-  // Sofa pixel sizes
   const compW = 220 * scale;
   const urbW  = 310 * scale;
   const famD  = 165 * scale;
-  const sofaD = 105 * scale;   // depth for compact + urban
-  const armW  = 105 * scale;   // rincón arm width
+  const sofaD = 105 * scale;
+  const armW  = 105 * scale;
 
-  // Center x for each sofa
+  // Sofas centered horizontally within the room
   const compX = ox + (rW - compW) / 2;
   const urbX  = ox + (rW - urbW) / 2;
 
   const opacity = (id: string) =>
     fitMap[id] === "ideal" ? 0.8 : fitMap[id] === "tight" ? 0.5 : 0.15;
 
-  // Clearance line at 105cm from back wall
   const clearY = oy + sofaD + 60 * scale;
   const anyFits = results.some((r) => r.fit !== "no");
-
-  // Whether labels are big enough to show (need at least 14px height)
   const labelMinPx = 14;
 
   return (
-    <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} className="w-full h-auto select-none">
-      {/* Room */}
-      <rect x={ox} y={oy} width={rW} height={rH} fill="#F8F7F3" stroke="#CEC8BA" strokeWidth="1.5" rx="3" />
+    <div>
+      <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} className="w-full h-auto select-none">
+        {/* Room */}
+        <rect x={ox} y={oy} width={rW} height={rH} fill="#F8F7F3" stroke="#CEC8BA" strokeWidth="1.5" rx="3" />
 
-      {/* ── Compact (220×105) — centered, label at bottom-left ── */}
-      {compW <= rW && sofaD <= rH && (
-        <g opacity={opacity("compact")}>
-          <rect x={compX} y={oy} width={compW} height={sofaD} fill={SOFA_COLORS.compact} rx="2" />
-          {sofaD >= labelMinPx && (
-            <text x={compX + 5} y={oy + sofaD - 5} fontSize="8" fontWeight="600" fill="#fff">
-              Compact
-            </text>
-          )}
-        </g>
-      )}
+        {/* ── Compact (220×105) label: bottom-left ── */}
+        {compW <= rW && sofaD <= rH && (
+          <g opacity={opacity("compact")}>
+            <rect x={compX} y={oy} width={compW} height={sofaD} fill={SOFA_COLORS.compact} rx="2" />
+            {sofaD >= labelMinPx && (
+              <text x={compX + 5} y={oy + sofaD - 5} fontSize="8" fontWeight="600" fill="#fff">
+                Compact
+              </text>
+            )}
+          </g>
+        )}
 
-      {/* ── Urban (310×105) — centered, label at bottom-right ── */}
-      {urbW <= rW && sofaD <= rH && (
-        <g opacity={opacity("urban")}>
-          <rect x={urbX} y={oy} width={urbW} height={sofaD} fill={SOFA_COLORS.urban} rx="2" />
-          {sofaD >= labelMinPx && (
-            <text x={urbX + urbW - 5} y={oy + sofaD - 5} fontSize="8" fontWeight="600" fill="#fff" textAnchor="end">
-              Urban
-            </text>
-          )}
-        </g>
-      )}
+        {/* ── Urban (310×105) label: bottom-right ── */}
+        {urbW <= rW && sofaD <= rH && (
+          <g opacity={opacity("urban")}>
+            <rect x={urbX} y={oy} width={urbW} height={sofaD} fill={SOFA_COLORS.urban} rx="2" />
+            {sofaD >= labelMinPx && (
+              <text x={urbX + urbW - 5} y={oy + sofaD - 5} fontSize="8" fontWeight="600" fill="#fff" textAnchor="end">
+                Urban
+              </text>
+            )}
+          </g>
+        )}
 
-      {/* ── Family Chaise (310×165) — centered, label in middle ── */}
-      {urbW <= rW && famD <= rH && (
-        <g opacity={opacity("family-chaise")}>
-          <rect x={urbX} y={oy} width={urbW} height={famD} fill={SOFA_COLORS["family-chaise"]} rx="2" />
-          {famD >= labelMinPx * 2 && (
-            <text x={urbX + urbW / 2} y={oy + famD / 2 + 4} fontSize="8" fontWeight="600" fill="#fff" textAnchor="middle">
-              Chaise
-            </text>
-          )}
-        </g>
-      )}
+        {/* ── Family Chaise (310×165) label: center ── */}
+        {urbW <= rW && famD <= rH && (
+          <g opacity={opacity("family-chaise")}>
+            <rect x={urbX} y={oy} width={urbW} height={famD} fill={SOFA_COLORS["family-chaise"]} rx="2" />
+            {famD >= labelMinPx * 2 && (
+              <text x={urbX + urbW / 2} y={oy + famD / 2 + 4} fontSize="8" fontWeight="600" fill="#fff" textAnchor="middle">
+                Chaise
+              </text>
+            )}
+          </g>
+        )}
 
-      {/* ── Family Rincón (L-shape: 310×105 + arm 105×165) — bottom-right corner ── */}
-      {urbW <= rW && famD <= rH && (
-        <g opacity={opacity("family-rincon")}>
-          {/* Main arm along back wall */}
-          <rect x={urbX} y={oy} width={urbW} height={sofaD} fill={SOFA_COLORS["family-rincon"]} rx="2" />
-          {/* Side arm going deeper (right end) */}
-          <rect x={urbX + urbW - armW} y={oy} width={armW} height={famD} fill={SOFA_COLORS["family-rincon"]} rx="2" />
-          {armW >= labelMinPx && famD >= labelMinPx * 2 && (
-            <text x={urbX + urbW - armW / 2} y={oy + famD - 5} fontSize="7" fontWeight="600" fill="#fff" textAnchor="middle">
-              Rincón
-            </text>
-          )}
-        </g>
-      )}
+        {/* ── Family Rincón: L-shape ── */}
+        {urbW <= rW && famD <= rH && (
+          <g opacity={opacity("family-rincon")}>
+            <rect x={urbX} y={oy} width={urbW} height={sofaD} fill={SOFA_COLORS["family-rincon"]} rx="2" />
+            <rect x={urbX + urbW - armW} y={oy} width={armW} height={famD} fill={SOFA_COLORS["family-rincon"]} rx="2" />
+            {armW >= labelMinPx && famD >= labelMinPx * 2 && (
+              <text x={urbX + urbW - armW / 2} y={oy + famD - 5} fontSize="7" fontWeight="600" fill="#fff" textAnchor="middle">
+                Rincón
+              </text>
+            )}
+          </g>
+        )}
 
-      {/* ── Clearance dashed line ── */}
-      {anyFits && clearY < oy + rH && (
-        <line
-          x1={ox + 3} x2={ox + rW - 3}
-          y1={clearY} y2={clearY}
-          stroke="#7DAF96" strokeWidth="1" strokeDasharray="4 3" opacity={0.6}
-        />
-      )}
+        {/* ── Clearance dashed line ── */}
+        {anyFits && clearY < oy + rH && (
+          <line
+            x1={ox + 3} x2={ox + rW - 3}
+            y1={clearY} y2={clearY}
+            stroke="#7DAF96" strokeWidth="1" strokeDasharray="4 3" opacity={0.6}
+          />
+        )}
 
-      {/* ── Dimension: width ── */}
-      <line x1={ox} x2={ox + rW} y1={oy + rH + 10} y2={oy + rH + 10} stroke="#9B9B90" strokeWidth="0.8" />
-      <line x1={ox} x2={ox} y1={oy + rH + 6} y2={oy + rH + 14} stroke="#9B9B90" strokeWidth="0.8" />
-      <line x1={ox + rW} x2={ox + rW} y1={oy + rH + 6} y2={oy + rH + 14} stroke="#9B9B90" strokeWidth="0.8" />
-      <text x={ox + rW / 2} y={oy + rH + 22} textAnchor="middle" fontSize="9" fill="#9B9B90">
-        {wallW} cm
-      </text>
+        {/* ── Width dimension (fixed at bottom of draw area) ── */}
+        <line x1={ox} x2={ox + rW} y1={SVG_H - PAD_B + 6} y2={SVG_H - PAD_B + 6} stroke="#9B9B90" strokeWidth="0.8" />
+        <line x1={ox}      x2={ox}      y1={SVG_H - PAD_B + 3} y2={SVG_H - PAD_B + 9} stroke="#9B9B90" strokeWidth="0.8" />
+        <line x1={ox + rW} x2={ox + rW} y1={SVG_H - PAD_B + 3} y2={SVG_H - PAD_B + 9} stroke="#9B9B90" strokeWidth="0.8" />
+        <text x={ox + rW / 2} y={SVG_H - PAD_B + 20} textAnchor="middle" fontSize="9" fill="#9B9B90">
+          {wallW} cm
+        </text>
 
-      {/* ── Dimension: depth ── */}
-      <line x1={ox - 10} x2={ox - 10} y1={oy} y2={oy + rH} stroke="#9B9B90" strokeWidth="0.8" />
-      <line x1={ox - 14} x2={ox - 6} y1={oy} y2={oy} stroke="#9B9B90" strokeWidth="0.8" />
-      <line x1={ox - 14} x2={ox - 6} y1={oy + rH} y2={oy + rH} stroke="#9B9B90" strokeWidth="0.8" />
-      <text
-        x={ox - 18}
-        y={oy + rH / 2}
-        textAnchor="middle" fontSize="9" fill="#9B9B90"
-        transform={`rotate(-90, ${ox - 18}, ${oy + rH / 2})`}
-      >
-        {roomD} cm
-      </text>
+        {/* ── Depth dimension (fixed at left of draw area) ── */}
+        <line x1={PAD_L - 10} x2={PAD_L - 10} y1={oy} y2={oy + rH} stroke="#9B9B90" strokeWidth="0.8" />
+        <line x1={PAD_L - 14} x2={PAD_L - 6} y1={oy}      y2={oy}      stroke="#9B9B90" strokeWidth="0.8" />
+        <line x1={PAD_L - 14} x2={PAD_L - 6} y1={oy + rH} y2={oy + rH} stroke="#9B9B90" strokeWidth="0.8" />
+        <text
+          x={PAD_L - 22}
+          y={oy + rH / 2}
+          textAnchor="middle" fontSize="9" fill="#9B9B90"
+          transform={`rotate(-90, ${PAD_L - 22}, ${oy + rH / 2})`}
+        >
+          {roomD} cm
+        </text>
+      </svg>
 
-      {/* ── Legend ── */}
-      {[
-        { id: "compact",        label: "Compact" },
-        { id: "urban",          label: "Urban" },
-        { id: "family-chaise",  label: "Chaise" },
-        { id: "family-rincon",  label: "Rincón" },
-      ].map((l, i) => (
-        <g key={l.id} transform={`translate(${ox + i * 62}, ${SVG_H - 9})`}>
-          <rect x={0} y={-7} width={10} height={8} fill={SOFA_COLORS[l.id]} rx="1.5"
-            opacity={fitMap[l.id] === "no" ? 0.2 : 0.7} />
-          <text x={13} y={0} fontSize="7.5" fill={fitMap[l.id] === "no" ? "#CEC8BA" : "#9B9B90"}>
-            {l.label}
-          </text>
-        </g>
-      ))}
-    </svg>
+      {/* ── Legend — fixed HTML row, never moves ── */}
+      <div className="flex items-center gap-4 flex-wrap px-1 mt-1">
+        {[
+          { id: "compact",       label: "Compact" },
+          { id: "urban",         label: "Urban" },
+          { id: "family-chaise", label: "Chaise" },
+          { id: "family-rincon", label: "Rincón" },
+        ].map((l) => (
+          <div key={l.id} className="flex items-center gap-1.5">
+            <div
+              className="w-3 h-2.5 rounded-sm shrink-0"
+              style={{
+                backgroundColor: SOFA_COLORS[l.id],
+                opacity: fitMap[l.id] === "no" ? 0.25 : 0.75,
+              }}
+            />
+            <span className={`text-[10px] ${fitMap[l.id] === "no" ? "text-[#CEC8BA]" : "text-[#9B9B90]"}`}>
+              {l.label}
+            </span>
+          </div>
+        ))}
+        <div className="flex items-center gap-1.5 ml-auto">
+          <div className="w-4 border-t border-dashed border-[#7DAF96] opacity-60" />
+          <span className="text-[10px] text-[#9B9B90]">60 cm paso</span>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -396,9 +407,6 @@ export default function CalculadoraPage() {
                 Vista de planta · escala aproximada
               </p>
               <RoomDiagram wallW={wallW} roomD={roomD} results={results} />
-              <p className="text-[10px] text-[#9B9B90] mt-1 px-1">
-                --- línea verde = 60 cm de paso mínimo
-              </p>
             </div>
           </div>
 
